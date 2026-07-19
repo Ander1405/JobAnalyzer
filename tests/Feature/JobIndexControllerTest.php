@@ -60,4 +60,17 @@ class JobIndexControllerTest extends TestCase
         $scores = collect($response->json('data'))->pluck('ai_analysis.match_score');
         $this->assertSame([90, 60, 40], $scores->all());
     }
+
+    public function test_min_match_filter_never_hides_jobs_that_have_not_been_analyzed_yet(): void
+    {
+        Job::factory()->create(['ai_analysis' => null]);
+        Job::factory()->create(['ai_analysis' => ['match_score' => 40]]);
+        Job::factory()->create(['ai_analysis' => ['match_score' => 90]]);
+
+        $response = $this->getJson('/api/jobs?min_match=75');
+
+        $response->assertJsonCount(2, 'data');
+        $scores = collect($response->json('data'))->pluck('ai_analysis.match_score');
+        $this->assertSame([90, null], $scores->all());
+    }
 }
