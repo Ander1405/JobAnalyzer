@@ -234,7 +234,7 @@ class CvParser
 
     private function stripBullet(string $line): string
     {
-        return trim((string) preg_replace('/^[-•*]\s*|^\d+[.)]\s*/', '', $line));
+        return trim((string) preg_replace('/^[-•*]\s*|^\d+[.)]\s*/u', '', $line));
     }
 
     private function normalize(string $text): string
