@@ -16,6 +16,21 @@ class NotionPublisher
 
     private const MAX_CHUNK_LENGTH = 1900;
 
+    /**
+     * Only jobs at or above this match score are worth a Notion round-trip; everything
+     * else stays local (still visible in the UI, just not synced to Notion).
+     */
+    public function isEligible(Job $job): bool
+    {
+        $matchScore = $job->ai_analysis['match_score'] ?? null;
+
+        if (! is_numeric($matchScore)) {
+            return false;
+        }
+
+        return (float) $matchScore >= (float) config('jobhunter.min_match_to_publish', 75);
+    }
+
     public function publish(Job $job): void
     {
         $response = Http::withToken((string) config('jobhunter.notion.token'))
@@ -76,6 +91,12 @@ class NotionPublisher
             'Idioma' => [
                 'select' => ['name' => $analysis['idioma'] ?? 'No especificado'],
             ],
+            'Inglés requerido' => [
+                'select' => ['name' => $analysis['ingles_requerido'] ?? 'No especificado'],
+            ],
+            'Alerta inglés' => [
+                'checkbox' => (bool) ($analysis['alerta_ingles'] ?? false),
+            ],
             'Estado' => [
                 'select' => ['name' => 'Nueva'],
             ],
@@ -125,6 +146,14 @@ class NotionPublisher
 
         foreach ($analysis['tailoring_cv'] ?? [] as $adjustment) {
             $blocks[] = $this->toDo($adjustment);
+        }
+
+        if (! empty($analysis['red_flags'])) {
+            $blocks[] = $this->heading('🚩 Red flags');
+
+            foreach ($analysis['red_flags'] as $flag) {
+                $blocks[] = $this->bulletedListItem($flag);
+            }
         }
 
         return $blocks;

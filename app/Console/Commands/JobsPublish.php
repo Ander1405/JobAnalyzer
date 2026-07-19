@@ -12,7 +12,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
 #[Signature('jobs:publish')]
-#[Description('Publish analyzed job offers to Notion as a searchable backup.')]
+#[Description('Publish analyzed job offers at or above MIN_MATCH_TO_PUBLISH to Notion as a searchable backup.')]
 class JobsPublish extends Command
 {
     public function handle(NotionPublisher $publisher): int
@@ -21,8 +21,15 @@ class JobsPublish extends Command
 
         $published = 0;
         $failed = 0;
+        $belowThreshold = 0;
 
         foreach ($jobs as $job) {
+            if (! $publisher->isEligible($job)) {
+                $belowThreshold++;
+
+                continue;
+            }
+
             $publisher->publish($job);
 
             $job->fresh()->status === JobStatus::Published ? $published++ : $failed++;
@@ -30,7 +37,7 @@ class JobsPublish extends Command
             usleep(350000);
         }
 
-        $this->info("{$published} published, {$failed} failed out of {$jobs->count()} analyzed jobs.");
+        $this->info("{$published} published, {$failed} failed, {$belowThreshold} below match threshold out of {$jobs->count()} analyzed jobs.");
 
         return self::SUCCESS;
     }

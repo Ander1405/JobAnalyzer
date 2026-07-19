@@ -45,9 +45,18 @@ async function publish() {
             headers: { Accept: 'application/json' },
         });
 
-        const updated: Job = await response.json();
+        const data = await response.json();
 
-        if (!response.ok || updated.status === 'failed') {
+        if (!response.ok) {
+            publishError.value =
+                data.message ?? 'No se pudo publicar en Notion.';
+
+            return;
+        }
+
+        const updated = data as Job;
+
+        if (updated.status === 'failed') {
             publishError.value =
                 updated.error_message ?? 'No se pudo publicar en Notion.';
         }

@@ -47,9 +47,12 @@ class NotionPublisherTest extends TestCase
         $this->assertArrayHasKey('Salario', $body['properties']);
         $this->assertArrayHasKey('Moneda', $body['properties']);
         $this->assertArrayHasKey('Idioma', $body['properties']);
+        $this->assertArrayHasKey('Inglés requerido', $body['properties']);
+        $this->assertArrayHasKey('Alerta inglés', $body['properties']);
         $this->assertArrayHasKey('Estado', $body['properties']);
         $this->assertArrayHasKey('Fecha detectada', $body['properties']);
         $this->assertSame('Nueva', $body['properties']['Estado']['select']['name']);
+        $this->assertFalse($body['properties']['Alerta inglés']['checkbox']);
 
         $descriptionParagraphs = collect($body['children'])
             ->filter(fn (array $block) => $block['type'] === 'paragraph');
@@ -65,5 +68,69 @@ class NotionPublisherTest extends TestCase
         $job->refresh();
         $this->assertSame(JobStatus::Published, $job->status);
         $this->assertSame('notion-page-123', $job->notion_page_id);
+    }
+
+    public function test_it_adds_a_red_flags_section_only_when_there_are_flags(): void
+    {
+        config([
+            'jobhunter.notion.token' => 'test-token',
+            'jobhunter.notion.database_id' => 'test-database-id',
+        ]);
+
+        Http::fake([
+            'api.notion.com/*' => Http::response(['id' => 'notion-page-123'], 200),
+        ]);
+
+        $job = Job::factory()->analyzed()->create([
+            'ai_analysis' => array_merge(Job::factory()->analyzed()->make()->ai_analysis, [
+                'red_flags' => ['El stack no coincide con el perfil.'],
+            ]),
+        ]);
+
+        (new NotionPublisher)->publish($job);
+
+        $body = Http::recorded()[0][0]->data();
+        $headings = collect($body['children'])
+            ->filter(fn (array $block) => $block['type'] === 'heading_2')
+            ->map(fn (array $block) => $block['heading_2']['rich_text'][0]['text']['content']);
+
+        $this->assertTrue($headings->contains('🚩 Red flags'));
+    }
+
+    public function test_it_omits_the_red_flags_section_when_there_are_none(): void
+    {
+        config([
+            'jobhunter.notion.token' => 'test-token',
+            'jobhunter.notion.database_id' => 'test-database-id',
+        ]);
+
+        Http::fake([
+            'api.notion.com/*' => Http::response(['id' => 'notion-page-123'], 200),
+        ]);
+
+        $job = Job::factory()->analyzed()->create();
+
+        (new NotionPublisher)->publish($job);
+
+        $body = Http::recorded()[0][0]->data();
+        $headings = collect($body['children'])
+            ->filter(fn (array $block) => $block['type'] === 'heading_2')
+            ->map(fn (array $block) => $block['heading_2']['rich_text'][0]['text']['content']);
+
+        $this->assertFalse($headings->contains('🚩 Red flags'));
+    }
+
+    public function test_is_eligible_respects_the_min_match_to_publish_threshold(): void
+    {
+        config(['jobhunter.min_match_to_publish' => 75]);
+        $publisher = new NotionPublisher;
+
+        $high = Job::factory()->analyzed()->make(['ai_analysis' => ['match_score' => 80]]);
+        $low = Job::factory()->analyzed()->make(['ai_analysis' => ['match_score' => 60]]);
+        $unanalyzed = Job::factory()->make(['ai_analysis' => null]);
+
+        $this->assertTrue($publisher->isEligible($high));
+        $this->assertFalse($publisher->isEligible($low));
+        $this->assertFalse($publisher->isEligible($unanalyzed));
     }
 }
