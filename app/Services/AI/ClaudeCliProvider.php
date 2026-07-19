@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace App\Services\AI;
 
+use App\DTOs\AiAnalysisResult;
+use App\DTOs\AiUsage;
 use App\Models\Job;
 use RuntimeException;
 use Symfony\Component\Process\Process;
+use Throwable;
 
 class ClaudeCliProvider implements AIProvider
 {
-    public function analyze(string $perfilMd, Job $job): array
+    public function __construct(private readonly ?string $model = null) {}
+
+    public function analyze(string $perfilMd, Job $job): AiAnalysisResult
     {
         $binary = (string) config('jobhunter.claude_cli.binary');
-        $model = config('jobhunter.claude_cli.model');
+        $model = $this->model ?? config('jobhunter.claude_cli.model');
 
         $command = [$binary, '-p', '--output-format', 'json'];
 
@@ -26,9 +31,11 @@ class ClaudeCliProvider implements AIProvider
         $process->setInput(JobAnalyzer::buildPrompt($perfilMd, $job));
         $process->setTimeout(120);
 
+        $startedAt = microtime(true);
+
         try {
             $process->run();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new RuntimeException(
                 "Unable to run the Claude CLI binary [{$binary}]. Verify it is installed and in your PATH: {$exception->getMessage()}",
                 previous: $exception,
@@ -47,6 +54,15 @@ class ClaudeCliProvider implements AIProvider
             throw new RuntimeException('Unexpected Claude CLI output format: missing "result" field.');
         }
 
-        return JobAnalyzer::parseAiResponse($decoded['result']);
+        $analysis = JobAnalyzer::parseAiResponse($decoded['result']);
+
+        $usage = new AiUsage(
+            durationMs: (int) ($decoded['duration_ms'] ?? round((microtime(true) - $startedAt) * 1000)),
+            inputTokens: $decoded['usage']['input_tokens'] ?? null,
+            outputTokens: $decoded['usage']['output_tokens'] ?? null,
+            costUsd: isset($decoded['total_cost_usd']) ? (float) $decoded['total_cost_usd'] : null,
+        );
+
+        return new AiAnalysisResult($analysis, $usage, (string) ($model ?: 'default'));
     }
 }

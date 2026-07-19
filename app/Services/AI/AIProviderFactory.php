@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace App\Services\AI;
 
+use App\Models\AiSetting;
 use InvalidArgumentException;
 
 class AIProviderFactory
 {
     public function make(): AIProvider
     {
-        $provider = (string) config('jobhunter.ai_provider');
+        $setting = AiSetting::current();
 
-        return match ($provider) {
-            'claude_cli' => app(ClaudeCliProvider::class),
-            'gemini' => app(GeminiProvider::class),
-            'openrouter' => app(OpenRouterProvider::class),
-            default => throw new InvalidArgumentException("Unknown AI_PROVIDER [{$provider}]."),
+        return match ($setting->provider) {
+            'claude_cli' => new ClaudeCliProvider($setting->model),
+            'gemini' => new GeminiProvider($setting->model),
+            'openrouter' => new OpenRouterProvider($setting->model),
+            default => throw new InvalidArgumentException("Unknown AI provider [{$setting->provider}]."),
         };
     }
 }

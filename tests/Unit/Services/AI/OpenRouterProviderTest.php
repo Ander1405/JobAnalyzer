@@ -34,6 +34,11 @@ class OpenRouterProviderTest extends TestCase
                 'choices' => [
                     ['message' => ['content' => json_encode($payload)]],
                 ],
+                'usage' => [
+                    'prompt_tokens' => 150,
+                    'completion_tokens' => 75,
+                    'cost' => 0.0003,
+                ],
             ], 200),
         ]);
 
@@ -41,7 +46,12 @@ class OpenRouterProviderTest extends TestCase
 
         $result = (new OpenRouterProvider)->analyze('# Perfil de prueba', $job);
 
-        $this->assertSame(40, $result['match_score']);
-        $this->assertSame('COP', $result['moneda']);
+        $this->assertSame(40, $result->analysis['match_score']);
+        $this->assertSame('COP', $result->analysis['moneda']);
+
+        $this->assertSame(150, $result->usage->inputTokens);
+        $this->assertSame(75, $result->usage->outputTokens);
+        $this->assertSame(0.0003, $result->usage->costUsd);
+        $this->assertSame('some-model:free', $result->model);
     }
 }

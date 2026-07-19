@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\AI;
 
+use App\DTOs\AiAnalysisResult;
 use App\Enums\JobStatus;
+use App\Models\AiSetting;
 use App\Models\Job;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -57,7 +59,7 @@ PROMPT;
     {
         $perfilMd = (string) file_get_contents(storage_path('app/perfil.md'));
         $provider = $this->factory->make();
-        $providerName = (string) config('jobhunter.ai_provider');
+        $providerName = AiSetting::current()->provider;
 
         $result = $this->attempt($provider, $perfilMd, $job)
             ?? $this->attempt($provider, $perfilMd, $job);
@@ -72,16 +74,18 @@ PROMPT;
         }
 
         $job->update([
-            'ai_analysis' => $result,
+            'ai_analysis' => $result->analysis,
             'ai_provider' => $providerName,
+            'ai_model' => $result->model,
+            'ai_duration_ms' => $result->usage->durationMs,
+            'ai_input_tokens' => $result->usage->inputTokens,
+            'ai_output_tokens' => $result->usage->outputTokens,
+            'ai_cost_usd' => $result->usage->costUsd,
             'status' => JobStatus::Analyzed,
         ]);
     }
 
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function attempt(AIProvider $provider, string $perfilMd, Job $job): ?array
+    private function attempt(AIProvider $provider, string $perfilMd, Job $job): ?AiAnalysisResult
     {
         try {
             return $provider->analyze($perfilMd, $job);
