@@ -12,6 +12,7 @@ const page = usePage();
 const threshold = page.props.matchScoreAlertThreshold;
 
 const jobs = ref<Job[]>([]);
+const sources = ref<string[]>([]);
 const loading = ref(false);
 const fetching = ref(false);
 const analyzing = ref(false);
@@ -48,7 +49,10 @@ watch(
     { deep: true },
 );
 
-onMounted(loadJobs);
+onMounted(() => {
+    loadJobs();
+    loadSources();
+});
 
 async function loadJobs() {
     loading.value = true;
@@ -81,6 +85,13 @@ async function loadJobs() {
     }
 }
 
+async function loadSources() {
+    const response = await fetch('/api/jobs/sources', {
+        headers: { Accept: 'application/json' },
+    });
+    sources.value = await response.json();
+}
+
 async function searchNew() {
     fetching.value = true;
 
@@ -89,7 +100,7 @@ async function searchNew() {
             method: 'POST',
             headers: { Accept: 'application/json' },
         });
-        await loadJobs();
+        await Promise.all([loadJobs(), loadSources()]);
     } finally {
         fetching.value = false;
     }
@@ -205,6 +216,7 @@ function onUpdated(updated: Job) {
             <JobsTable
                 v-model:filters="filters"
                 :jobs="jobs"
+                :sources="sources"
                 :loading="loading"
                 :fetching="fetching"
                 :analyzing="analyzing"
