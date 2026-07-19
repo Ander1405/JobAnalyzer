@@ -54,6 +54,7 @@ function rangeEnd(): number {
 
 const statusOptions: JobStatus[] = [
     'fetched',
+    'analyzing',
     'analyzed',
     'published',
     'failed',

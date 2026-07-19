@@ -138,18 +138,42 @@ async function searchNew() {
     }
 }
 
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchJob(id: number): Promise<Job> {
+    const response = await fetch(`/api/jobs/${id}`, {
+        headers: { Accept: 'application/json' },
+    });
+
+    return response.json();
+}
+
+async function waitForAnalysis(ids: number[]): Promise<Job[]> {
+    const resolved = new Map<number, Job>();
+
+    while (resolved.size < ids.length) {
+        await sleep(1500);
+
+        const pendingIds = ids.filter((id) => !resolved.has(id));
+        const jobs = await Promise.all(pendingIds.map(fetchJob));
+
+        for (const job of jobs) {
+            if (job.status !== 'analyzing') {
+                resolved.set(job.id, job);
+            }
+        }
+
+        await loadJobs();
+    }
+
+    return ids.map((id) => resolved.get(id)!);
+}
+
 async function analyzePending() {
     analyzing.value = true;
     analysisSummary.value = null;
-
-    const summary: AnalysisSummary = {
-        count: 0,
-        durationMs: 0,
-        inputTokens: 0,
-        outputTokens: 0,
-        costUsd: 0,
-        hasUnknownCost: false,
-    };
 
     try {
         const params = buildParams({
@@ -162,22 +186,44 @@ async function analyzePending() {
         });
         const pending: PaginatedJobs = await pendingResponse.json();
 
-        for (const job of pending.data) {
-            const response = await fetch(`/api/jobs/${job.id}/analyze`, {
-                method: 'POST',
-                headers: { Accept: 'application/json' },
-            });
-            const analyzed: Job = await response.json();
+        if (pending.data.length === 0) {
+            return;
+        }
 
+        const ids = pending.data.map((job) => job.id);
+
+        await Promise.all(
+            ids.map((id) =>
+                fetch(`/api/jobs/${id}/analyze`, {
+                    method: 'POST',
+                    headers: { Accept: 'application/json' },
+                }),
+            ),
+        );
+
+        await loadJobs();
+
+        const analyzed = await waitForAnalysis(ids);
+
+        const summary: AnalysisSummary = {
+            count: 0,
+            durationMs: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            costUsd: 0,
+            hasUnknownCost: false,
+        };
+
+        for (const job of analyzed) {
             summary.count++;
-            summary.durationMs += analyzed.ai_duration_ms ?? 0;
-            summary.inputTokens += analyzed.ai_input_tokens ?? 0;
-            summary.outputTokens += analyzed.ai_output_tokens ?? 0;
+            summary.durationMs += job.ai_duration_ms ?? 0;
+            summary.inputTokens += job.ai_input_tokens ?? 0;
+            summary.outputTokens += job.ai_output_tokens ?? 0;
 
-            if (analyzed.ai_cost_usd === null) {
+            if (job.ai_cost_usd === null) {
                 summary.hasUnknownCost = true;
             } else {
-                summary.costUsd += analyzed.ai_cost_usd;
+                summary.costUsd += job.ai_cost_usd;
             }
         }
 

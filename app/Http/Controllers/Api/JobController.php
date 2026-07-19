@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Enums\ApplicationStatus;
+use App\Enums\JobStatus;
 use App\Http\Controllers\Controller;
+use App\Jobs\AnalyzeJobListing;
 use App\Models\Job;
-use App\Services\AI\JobAnalyzer;
 use App\Services\Notion\NotionPublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -79,9 +80,11 @@ class JobController extends Controller
         return response()->json(['output' => Artisan::output()]);
     }
 
-    public function analyze(Job $job, JobAnalyzer $analyzer): JsonResponse
+    public function analyze(Job $job): JsonResponse
     {
-        $analyzer->analyze($job);
+        $job->update(['status' => JobStatus::Analyzing, 'error_message' => null]);
+
+        AnalyzeJobListing::dispatch($job);
 
         return response()->json($job->fresh());
     }

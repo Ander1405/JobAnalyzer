@@ -2,7 +2,7 @@
 
 A personal, local-only job search automation tool. It fetches job offers (JSearch/RapidAPI, LaraJobs RSS, optionally InfoJobs), analyzes each one against your profile with an AI provider of your choice, shows everything in a local Vue table, and backs up qualifying offers to Notion.
 
-Everything runs on your machine — there is no cloud deployment, no queue workers, no scraping of LinkedIn/Indeed. The default AI provider (`claude_cli`) shells out to your local `claude` CLI session, so analysis costs $0 beyond your existing Claude subscription.
+Everything runs on your machine — there is no cloud deployment, no scraping of LinkedIn/Indeed. The default AI provider (`claude_cli`) shells out to your local `claude` CLI session, so analysis costs $0 beyond your existing Claude subscription.
 
 ## Setup
 
@@ -87,9 +87,15 @@ Then open `http://127.0.0.1:8000`.
 | `php artisan cv:import {path} [--slug=default]` | Parse a CV file (pdf/txt/md) deterministically — no AI — and store it as a profile. |
 | `php artisan profile:sync` | Re-parse a hand-edited `storage/app/perfil.md` back into the active profile's structured fields. |
 
-The UI's "Buscar nuevas" and "Analizar pendientes" buttons, plus the per-row "Publicar en Notion" action, call the same logic through the local `/api/jobs*` endpoints.
+The UI's "Buscar nuevas" and "Analizar pendientes" buttons, plus the per-row "Publicar en Notion" action, call the same logic through the local `/api/jobs*` endpoints. Unlike `php artisan jobs:analyze`, the "Analizar pendientes" button doesn't call the AI provider synchronously in the web request — it dispatches an `AnalyzeJobListing` queue job per pending offer (job status becomes `analyzing` immediately) and the UI polls until they resolve. This matters if you're serving the app through Valet/nginx+PHP-FPM (or any other daemon-managed web server): with `claude_cli`, macOS denies Keychain access to processes spawned by a daemon rather than an interactive terminal session, so `claude` reports "Not logged in" even when you're logged in everywhere else. Running the queue worker yourself from a normal terminal session sidesteps that:
 
-Every analysis reports how much it actually cost: the job detail drawer shows the provider/model used, elapsed time, input/output tokens, and cost in USD (or "Gratis / N/A" when a provider — Gemini today — doesn't report a cost). Running "Analizar pendientes" also shows a summary banner with the totals for the whole batch.
+```bash
+php artisan queue:work
+```
+
+Leave it running while you use the jobs page. If you don't run a worker, queued analyses stay stuck in `analyzing` forever. `php artisan jobs:analyze`/`jobs:run` are unaffected either way — they call the AI provider directly from whatever terminal session you invoke them in, so `claude_cli` works out of the box there.
+
+Every analysis reports how much it actually cost: the job detail drawer shows the provider/model used, elapsed time, input/output tokens, and cost in USD (or "Gratis / N/A" when a provider — Gemini today — doesn't report a cost). Running "Analizar pendientes" also shows a summary banner with the totals for the whole batch once every job in it finishes.
 
 ### CV & profile
 
@@ -139,7 +145,7 @@ Visit `/profile` (linked from the top of the jobs page) to manage your profile. 
 ## Data model notes
 
 - Job offers live in a `job_offers` table (not `jobs`), because Laravel's own queue system already owns a table named `jobs` (`QUEUE_CONNECTION=database`).
-- `status` (`fetched` → `analyzed` → `published` → `failed`) tracks the pipeline stage. `application_status` (`Nueva`, `CV adaptado`, `Aplicada`, `Entrevista`, `Cerrada`) is a separate, UI-editable field for tracking where you are in the actual application process — it's local-only and isn't synced back to Notion.
+- `status` (`fetched` → `analyzing` → `analyzed` → `published`, or `failed`) tracks the pipeline stage; `analyzing` only appears while the `AnalyzeJobListing` queue job is in flight (the console commands skip it and go straight to `analyzed`/`failed`). `application_status` (`Nueva`, `CV adaptado`, `Aplicada`, `Entrevista`, `Cerrada`) is a separate, UI-editable field for tracking where you are in the actual application process — it's local-only and isn't synced back to Notion.
 - The currently selected AI provider/model lives in a single-row `ai_settings` table (not `.env`), since it needs to change at runtime from the UI without a restart.
 - Profile variants live in a `profiles` table (slug, structured fields, `raw_md`, `is_active`, `source_text`); `storage/app/perfil.md` is always a mirror of whichever row has `is_active = true`, kept in sync by every import/edit/activate/sync action. `source_text` is the raw text extracted from the uploaded CV at import time (never re-derived from `raw_md`), used only to let the AI review compare the parse against the real original.
 
