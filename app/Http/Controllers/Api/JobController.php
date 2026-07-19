@@ -44,7 +44,20 @@ class JobController extends Controller
 
         $jobs = $jobs->sortByDesc(fn (Job $job) => $this->matchScore($job))->values();
 
-        return response()->json($jobs);
+        $total = $jobs->count();
+        $perPage = max(1, min(500, (int) $request->query('per_page', 20)));
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min(max(1, (int) $request->query('page', 1)), $lastPage);
+
+        return response()->json([
+            'data' => $jobs->forPage($page, $perPage)->values(),
+            'meta' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => $lastPage,
+            ],
+        ]);
     }
 
     public function show(Job $job): JsonResponse

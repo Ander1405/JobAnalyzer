@@ -12,9 +12,10 @@ export type AiAnalysis = {
     tipo_contrato: string;
     salario_normalizado: string;
     moneda: string;
-    ingles_requerido: string;
-    alerta_ingles: boolean;
-    red_flags: string[];
+    // Absent on jobs analyzed before this schema addition.
+    ingles_requerido?: string;
+    alerta_ingles?: boolean;
+    red_flags?: string[];
 };
 
 export type Job = {
@@ -41,6 +42,18 @@ export type Job = {
     error_message: string | null;
     created_at: string;
     updated_at: string;
+};
+
+export type PaginationMeta = {
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+};
+
+export type PaginatedJobs = {
+    data: Job[];
+    meta: PaginationMeta;
 };
 
 export const APPLICATION_STATUSES: ApplicationStatus[] = [

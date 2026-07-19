@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
-import type { ApplicationStatus, Job, JobStatus } from '@/types/job';
+import type {
+    ApplicationStatus,
+    Job,
+    JobStatus,
+    PaginationMeta,
+} from '@/types/job';
 
 export type JobFilters = {
     status: JobStatus | '';
@@ -11,9 +16,10 @@ export type JobFilters = {
 
 const filters = defineModel<JobFilters>('filters', { required: true });
 
-defineProps<{
+const props = defineProps<{
     jobs: Job[];
     sources: string[];
+    meta: PaginationMeta | null;
     loading: boolean;
     fetching: boolean;
     analyzing: boolean;
@@ -24,7 +30,27 @@ const emit = defineEmits<{
     select: [job: Job];
     'search-new': [];
     'analyze-pending': [];
+    'page-change': [page: number];
 }>();
+
+function rangeStart(): number {
+    if (!props.meta || props.meta.total === 0) {
+        return 0;
+    }
+
+    return (props.meta.current_page - 1) * props.meta.per_page + 1;
+}
+
+function rangeEnd(): number {
+    if (!props.meta) {
+        return 0;
+    }
+
+    return Math.min(
+        props.meta.current_page * props.meta.per_page,
+        props.meta.total,
+    );
+}
 
 const statusOptions: JobStatus[] = [
     'fetched',
@@ -247,6 +273,38 @@ function statusBadgeClass(status: ApplicationStatus): string {
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <div
+            v-if="meta && meta.total > 0"
+            class="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500 dark:text-gray-400"
+        >
+            <span>
+                Mostrando {{ rangeStart() }}–{{ rangeEnd() }} de
+                {{ meta.total }}
+            </span>
+            <div class="flex items-center gap-2">
+                <button
+                    type="button"
+                    :disabled="meta.current_page <= 1"
+                    class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                    @click="emit('page-change', meta.current_page - 1)"
+                >
+                    ← Anterior
+                </button>
+                <span
+                    >Página {{ meta.current_page }} de
+                    {{ meta.last_page }}</span
+                >
+                <button
+                    type="button"
+                    :disabled="meta.current_page >= meta.last_page"
+                    class="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                    @click="emit('page-change', meta.current_page + 1)"
+                >
+                    Siguiente →
+                </button>
+            </div>
         </div>
     </div>
 </template>
