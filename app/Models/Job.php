@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\ApplicationStatus;
 use App\Enums\JobStatus;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
@@ -22,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $salary_raw
  * @property string|null $language
  * @property JobStatus $status
+ * @property ApplicationStatus $application_status
  * @property string|null $ai_provider
  * @property array<string, mixed>|null $ai_analysis
  * @property string|null $notion_page_id
@@ -41,6 +43,7 @@ use Illuminate\Support\Carbon;
     'salary_raw',
     'language',
     'status',
+    'application_status',
     'ai_provider',
     'ai_analysis',
     'notion_page_id',
@@ -57,6 +60,7 @@ class Job extends Model
     {
         return [
             'status' => JobStatus::class,
+            'application_status' => ApplicationStatus::class,
             'ai_analysis' => 'array',
         ];
     }
