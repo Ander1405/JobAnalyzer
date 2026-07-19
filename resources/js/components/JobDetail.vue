@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { cn } from '@/lib/utils';
+import { cn, formatCost, formatDuration } from '@/lib/utils';
 import { APPLICATION_STATUSES } from '@/types/job';
 import type { Job } from '@/types/job';
 
@@ -146,6 +146,29 @@ async function updateStatus(event: Event) {
                     <p class="text-sm text-gray-700 dark:text-gray-300">
                         {{ analysis.diagnostico }}
                     </p>
+                </section>
+
+                <section
+                    v-if="job.ai_duration_ms !== null"
+                    class="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400"
+                >
+                    <span
+                        >🤖 {{ job.ai_provider
+                        }}<span v-if="job.ai_model">
+                            · {{ job.ai_model }}</span
+                        ></span
+                    >
+                    <span>⏱ {{ formatDuration(job.ai_duration_ms) }}</span>
+                    <span
+                        v-if="
+                            job.ai_input_tokens !== null ||
+                            job.ai_output_tokens !== null
+                        "
+                    >
+                        🔢 {{ job.ai_input_tokens ?? '—' }} in /
+                        {{ job.ai_output_tokens ?? '—' }} out
+                    </span>
+                    <span>💰 {{ formatCost(job.ai_cost_usd) }}</span>
                 </section>
 
                 <section class="mb-4">

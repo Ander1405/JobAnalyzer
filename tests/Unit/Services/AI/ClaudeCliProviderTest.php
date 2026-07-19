@@ -19,8 +19,13 @@ class ClaudeCliProviderTest extends TestCase
 
         $result = (new ClaudeCliProvider)->analyze('# Perfil de prueba', $job);
 
-        $this->assertSame(88, $result['match_score']);
-        $this->assertSame('Español', $result['idioma']);
+        $this->assertSame(88, $result->analysis['match_score']);
+        $this->assertSame('Español', $result->analysis['idioma']);
+
+        $this->assertSame(2997, $result->usage->durationMs);
+        $this->assertSame(120, $result->usage->inputTokens);
+        $this->assertSame(340, $result->usage->outputTokens);
+        $this->assertSame(0.0512, $result->usage->costUsd);
     }
 
     public function test_it_throws_a_clear_exception_when_the_binary_exits_with_an_error(): void

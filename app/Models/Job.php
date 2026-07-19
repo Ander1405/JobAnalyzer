@@ -28,6 +28,11 @@ use Illuminate\Support\Carbon;
  * @property ApplicationStatus $application_status
  * @property string|null $ai_provider
  * @property array<string, mixed>|null $ai_analysis
+ * @property string|null $ai_model
+ * @property int|null $ai_duration_ms
+ * @property int|null $ai_input_tokens
+ * @property int|null $ai_output_tokens
+ * @property float|null $ai_cost_usd
  * @property string|null $notion_page_id
  * @property string|null $error_message
  * @property Carbon|null $created_at
@@ -48,6 +53,11 @@ use Illuminate\Support\Carbon;
     'application_status',
     'ai_provider',
     'ai_analysis',
+    'ai_model',
+    'ai_duration_ms',
+    'ai_input_tokens',
+    'ai_output_tokens',
+    'ai_cost_usd',
     'notion_page_id',
     'error_message',
 ])]
@@ -67,6 +77,7 @@ class Job extends Model
             'status' => JobStatus::class,
             'application_status' => ApplicationStatus::class,
             'ai_analysis' => 'array',
+            'ai_cost_usd' => 'float',
         ];
     }
 }

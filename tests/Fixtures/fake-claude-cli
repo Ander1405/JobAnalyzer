@@ -12,5 +12,10 @@ $analysis = [
     'moneda' => 'USD',
 ];
 
-fwrite(STDOUT, json_encode(['result' => json_encode($analysis)]));
+fwrite(STDOUT, json_encode([
+    'result' => json_encode($analysis),
+    'duration_ms' => 2997,
+    'total_cost_usd' => 0.0512,
+    'usage' => ['input_tokens' => 120, 'output_tokens' => 340],
+]));
 exit(0);

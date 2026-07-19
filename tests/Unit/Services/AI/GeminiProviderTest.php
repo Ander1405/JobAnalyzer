@@ -15,7 +15,7 @@ class GeminiProviderTest extends TestCase
     {
         config([
             'jobhunter.gemini.api_key' => 'test-key',
-            'jobhunter.gemini.model' => 'gemini-2.0-flash',
+            'jobhunter.gemini.model' => 'gemini-flash-latest',
         ]);
 
         $payload = [
@@ -34,6 +34,10 @@ class GeminiProviderTest extends TestCase
                 'candidates' => [
                     ['content' => ['parts' => [['text' => json_encode($payload)]]]],
                 ],
+                'usageMetadata' => [
+                    'promptTokenCount' => 200,
+                    'candidatesTokenCount' => 90,
+                ],
             ], 200),
         ]);
 
@@ -41,7 +45,12 @@ class GeminiProviderTest extends TestCase
 
         $result = (new GeminiProvider)->analyze('# Perfil de prueba', $job);
 
-        $this->assertSame(65, $result['match_score']);
-        $this->assertSame('Inglés', $result['idioma']);
+        $this->assertSame(65, $result->analysis['match_score']);
+        $this->assertSame('Inglés', $result->analysis['idioma']);
+
+        $this->assertSame(200, $result->usage->inputTokens);
+        $this->assertSame(90, $result->usage->outputTokens);
+        $this->assertNull($result->usage->costUsd);
+        $this->assertSame('gemini-flash-latest', $result->model);
     }
 }
