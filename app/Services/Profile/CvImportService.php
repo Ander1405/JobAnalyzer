@@ -38,6 +38,7 @@ class CvImportService
                 'languages' => $parsed['languages'],
                 'certifications' => $parsed['certifications'],
                 'raw_md' => $rawMd,
+                'source_text' => $parsed['source_text'],
                 'is_active' => true,
             ],
         );

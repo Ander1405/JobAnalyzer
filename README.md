@@ -130,6 +130,8 @@ Visit `/profile` (linked from the top of the jobs page) to manage your profile. 
 
 **English alert & red flags.** Every analysis now also returns `ingles_requerido` and `alerta_ingles` (true when a vacancy asks for more English than the active profile's declared level) and `red_flags` (concrete CV/vacancy mismatches, never generic filler) — shown in the job detail drawer and synced to Notion.
 
+**AI review (opt-in, unlike parsing).** Parsing a CV never calls the AI, but you can explicitly ask the AI to help improve it: the "Revisión con IA" section on `/profile` compares the profile's stored original CV text (`source_text`, saved at import time) against the deterministically-parsed fields, and proposes discrete suggestions — corrections (content the parser dropped, split, or mis-transcribed) and improvements (wording, quantified impact) — each with a rationale. **Nothing is applied automatically**: check the suggestions you approve and click "Aplicar seleccionadas"; only that subset is applied, deterministically, to the profile's fields (`raw_md`/`perfil.md` regenerated), with no further AI call in the loop. Profiles imported before this feature has no stored `source_text`, so re-import the CV once to enable it.
+
 ### Optional: daily schedule
 
 `routes/console.php` has a commented-out entry to run `jobs:run` daily at 07:00 (`America/Bogota`). Uncomment it and keep `php artisan schedule:work` running (or a system cron calling `schedule:run` every minute) if you want it to run unattended.
@@ -139,7 +141,7 @@ Visit `/profile` (linked from the top of the jobs page) to manage your profile. 
 - Job offers live in a `job_offers` table (not `jobs`), because Laravel's own queue system already owns a table named `jobs` (`QUEUE_CONNECTION=database`).
 - `status` (`fetched` → `analyzed` → `published` → `failed`) tracks the pipeline stage. `application_status` (`Nueva`, `CV adaptado`, `Aplicada`, `Entrevista`, `Cerrada`) is a separate, UI-editable field for tracking where you are in the actual application process — it's local-only and isn't synced back to Notion.
 - The currently selected AI provider/model lives in a single-row `ai_settings` table (not `.env`), since it needs to change at runtime from the UI without a restart.
-- Profile variants live in a `profiles` table (slug, structured fields, `raw_md`, `is_active`); `storage/app/perfil.md` is always a mirror of whichever row has `is_active = true`, kept in sync by every import/edit/activate/sync action.
+- Profile variants live in a `profiles` table (slug, structured fields, `raw_md`, `is_active`, `source_text`); `storage/app/perfil.md` is always a mirror of whichever row has `is_active = true`, kept in sync by every import/edit/activate/sync action. `source_text` is the raw text extracted from the uploaded CV at import time (never re-derived from `raw_md`), used only to let the AI review compare the parse against the real original.
 
 ## Testing
 

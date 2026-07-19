@@ -1,0 +1,31 @@
+#!/usr/bin/env php
+<?php
+
+$suggestions = [
+    [
+        'category' => 'correction',
+        'field' => 'skills',
+        'action' => 'add',
+        'index' => null,
+        'current' => null,
+        'suggested' => 'Docker',
+        'rationale' => 'El CV original menciona Docker pero el parser no lo capturó.',
+    ],
+    [
+        'category' => 'improvement',
+        'field' => 'summary',
+        'action' => 'replace',
+        'index' => null,
+        'current' => 'Desarrollador backend.',
+        'suggested' => 'Desarrollador backend con 5 años de experiencia liderando migraciones a microservicios.',
+        'rationale' => 'Cuantifica la experiencia y agrega un logro concreto.',
+    ],
+];
+
+fwrite(STDOUT, json_encode([
+    'result' => json_encode(['suggestions' => $suggestions]),
+    'duration_ms' => 1500,
+    'total_cost_usd' => 0.0123,
+    'usage' => ['input_tokens' => 200, 'output_tokens' => 150],
+]));
+exit(0);

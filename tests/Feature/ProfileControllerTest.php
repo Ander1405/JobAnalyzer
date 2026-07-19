@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Profile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -52,6 +53,10 @@ class ProfileControllerTest extends TestCase
 
         $this->assertDatabaseHas('profiles', ['slug' => 'default', 'is_active' => true]);
         $this->assertStringContainsString('jane.doe@example.com', file_get_contents($this->profilePath));
+
+        $profile = Profile::where('slug', 'default')->first();
+        $this->assertNotNull($profile->source_text);
+        $this->assertStringContainsString('Jane Doe', $profile->source_text);
     }
 
     public function test_it_imports_a_plain_text_resume(): void
