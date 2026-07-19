@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AiSettingsController;
 use App\Http\Controllers\Api\JobController;
+use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('jobs', [JobController::class, 'index'])->name('api.jobs.index');
@@ -15,3 +16,6 @@ Route::get('ai/settings', [AiSettingsController::class, 'index'])->name('api.ai.
 Route::put('ai/settings', [AiSettingsController::class, 'update'])->name('api.ai.settings.update');
 Route::get('ai/providers', [AiSettingsController::class, 'providers'])->name('api.ai.providers');
 Route::get('ai/providers/{provider}/models', [AiSettingsController::class, 'models'])->name('api.ai.providers.models');
+
+Route::get('profile', [ProfileController::class, 'show'])->name('api.profile.show');
+Route::post('profile/upload', [ProfileController::class, 'upload'])->name('api.profile.upload');
