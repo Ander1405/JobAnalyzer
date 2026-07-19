@@ -42,6 +42,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'matchScoreAlertThreshold' => config('jobhunter.match_score_alert_threshold'),
+            'minMatchToPublish' => config('jobhunter.min_match_to_publish', 75),
         ];
     }
 }
