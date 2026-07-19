@@ -67,12 +67,27 @@ PROMPT;
 
     public function __construct(private readonly AIProviderFactory $factory) {}
 
+    /**
+     * Runs from a queued job (AnalyzeJobListing) as well as console commands, so any
+     * exception here must resolve the job's status itself — a queue worker's own retry/
+     * failed_jobs handling never touches this model, and would otherwise leave it stuck
+     * at "analyzing" forever.
+     */
     public function analyze(Job $job): void
     {
-        $activeProfile = Profile::active();
-        $perfilMd = $activeProfile !== null ? $activeProfile->raw_md : (string) file_get_contents(storage_path('app/perfil.md'));
-        $provider = $this->factory->make();
-        $providerName = AiSetting::current()->provider;
+        try {
+            $activeProfile = Profile::active();
+            $perfilMd = $activeProfile !== null ? $activeProfile->raw_md : (string) file_get_contents(storage_path('app/perfil.md'));
+            $provider = $this->factory->make();
+            $providerName = AiSetting::current()->provider;
+        } catch (Throwable $exception) {
+            $job->update([
+                'status' => JobStatus::Failed,
+                'error_message' => $exception->getMessage(),
+            ]);
+
+            return;
+        }
 
         $result = $this->attempt($provider, $perfilMd, $job)
             ?? $this->attempt($provider, $perfilMd, $job);
