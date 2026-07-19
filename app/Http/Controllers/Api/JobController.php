@@ -68,6 +68,15 @@ class JobController extends Controller
 
     public function publish(Job $job, NotionPublisher $publisher): JsonResponse
     {
+        if (! $publisher->isEligible($job)) {
+            return response()->json([
+                'message' => sprintf(
+                    'This job is below the minimum match score to publish (%d%%).',
+                    config('jobhunter.min_match_to_publish', 75),
+                ),
+            ], 422);
+        }
+
         $publisher->publish($job);
 
         return response()->json($job->fresh());
