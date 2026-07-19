@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\AI;
 
 use App\DTOs\AiAnalysisResult;
+use App\DTOs\AiCompletionResult;
 use App\DTOs\AiUsage;
 use App\Models\Job;
 use RuntimeException;
@@ -17,6 +18,17 @@ class ClaudeCliProvider implements AIProvider
 
     public function analyze(string $perfilMd, Job $job): AiAnalysisResult
     {
+        $completion = $this->complete(JobAnalyzer::systemPrompt(), JobAnalyzer::userPrompt($perfilMd, $job));
+
+        return new AiAnalysisResult(
+            JobAnalyzer::parseAiResponse($completion->text),
+            $completion->usage,
+            $completion->model,
+        );
+    }
+
+    public function complete(string $systemPrompt, string $userPrompt): AiCompletionResult
+    {
         $binary = (string) config('jobhunter.claude_cli.binary');
         $model = $this->model ?? config('jobhunter.claude_cli.model');
 
@@ -28,7 +40,7 @@ class ClaudeCliProvider implements AIProvider
         }
 
         $process = new Process($command);
-        $process->setInput(JobAnalyzer::buildPrompt($perfilMd, $job));
+        $process->setInput($systemPrompt."\n\n".$userPrompt);
         $process->setTimeout(120);
 
         $startedAt = microtime(true);
@@ -54,8 +66,6 @@ class ClaudeCliProvider implements AIProvider
             throw new RuntimeException('Unexpected Claude CLI output format: missing "result" field.');
         }
 
-        $analysis = JobAnalyzer::parseAiResponse($decoded['result']);
-
         $usage = new AiUsage(
             durationMs: (int) ($decoded['duration_ms'] ?? round((microtime(true) - $startedAt) * 1000)),
             inputTokens: $decoded['usage']['input_tokens'] ?? null,
@@ -63,6 +73,6 @@ class ClaudeCliProvider implements AIProvider
             costUsd: isset($decoded['total_cost_usd']) ? (float) $decoded['total_cost_usd'] : null,
         );
 
-        return new AiAnalysisResult($analysis, $usage, (string) ($model ?: 'default'));
+        return new AiCompletionResult($decoded['result'], $usage, (string) ($model ?: 'default'));
     }
 }

@@ -16,7 +16,7 @@ php artisan key:generate
 php artisan migrate
 ```
 
-`storage/app/perfil.md` already ships with a starter profile — edit it to match your own background; it's the single source of truth the AI uses for matching.
+`storage/app/perfil.md` already ships with a starter profile — edit it to match your own background, or replace it entirely by uploading your actual CV as a PDF from the UI (see "Uploading your CV" below). It's the single source of truth the AI uses for matching.
 
 ### 2. Configure job sources
 
@@ -87,6 +87,10 @@ The UI's "Buscar nuevas" and "Analizar pendientes" buttons, plus the per-row "Pu
 
 Every analysis reports how much it actually cost: the job detail drawer shows the provider/model used, elapsed time, input/output tokens, and cost in USD (or "Gratis / N/A" when a provider — Gemini today — doesn't report a cost). Running "Analizar pendientes" also shows a summary banner with the totals for the whole batch.
 
+### Uploading your CV
+
+At the top of the jobs page, the "Perfil (hoja de vida)" widget lets you upload your CV as a PDF instead of hand-editing `storage/app/perfil.md`. It extracts the text, sends it through the currently configured AI provider to reformat it into the same structured Markdown, and overwrites `perfil.md` with the result — future analyses immediately use it. The raw PDF is kept at `storage/app/private/resume.pdf` for reference. Only PDF is supported; other formats are rejected with a clear error.
+
 ### Optional: daily schedule
 
 `routes/console.php` has a commented-out entry to run `jobs:run` daily at 07:00 (`America/Bogota`). Uncomment it and keep `php artisan schedule:work` running (or a system cron calling `schedule:run` every minute) if you want it to run unattended.
@@ -103,4 +107,4 @@ Every analysis reports how much it actually cost: the job detail drawer shows th
 php artisan test --compact
 ```
 
-Covers RSS/JSearch source parsing, AI JSON response validation (valid, fenced, malformed), each AI provider, and Notion payload chunking.
+Covers RSS/JSearch source parsing, AI JSON response validation (valid, fenced, malformed), each AI provider, Notion payload chunking, the AI model catalog/settings endpoints, and CV extraction/conversion/upload.

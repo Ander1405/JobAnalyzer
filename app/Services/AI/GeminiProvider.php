@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\AI;
 
 use App\DTOs\AiAnalysisResult;
+use App\DTOs\AiCompletionResult;
 use App\DTOs\AiUsage;
 use App\Models\Job;
 use Illuminate\Support\Facades\Http;
@@ -18,6 +19,17 @@ class GeminiProvider implements AIProvider
 
     public function analyze(string $perfilMd, Job $job): AiAnalysisResult
     {
+        $completion = $this->complete(JobAnalyzer::systemPrompt(), JobAnalyzer::userPrompt($perfilMd, $job));
+
+        return new AiAnalysisResult(
+            JobAnalyzer::parseAiResponse($completion->text),
+            $completion->usage,
+            $completion->model,
+        );
+    }
+
+    public function complete(string $systemPrompt, string $userPrompt): AiCompletionResult
+    {
         $model = $this->model ?? (string) config('jobhunter.gemini.model');
         $apiKey = (string) config('jobhunter.gemini.api_key');
 
@@ -28,7 +40,7 @@ class GeminiProvider implements AIProvider
                 'contents' => [
                     [
                         'parts' => [
-                            ['text' => JobAnalyzer::buildPrompt($perfilMd, $job)],
+                            ['text' => $systemPrompt."\n\n".$userPrompt],
                         ],
                     ],
                 ],
@@ -42,8 +54,6 @@ class GeminiProvider implements AIProvider
             throw new RuntimeException('Unexpected Gemini response format: missing candidate text.');
         }
 
-        $analysis = JobAnalyzer::parseAiResponse($text);
-
         $usage = new AiUsage(
             durationMs: (int) round((microtime(true) - $startedAt) * 1000),
             inputTokens: $response->json('usageMetadata.promptTokenCount'),
@@ -51,6 +61,6 @@ class GeminiProvider implements AIProvider
             costUsd: null,
         );
 
-        return new AiAnalysisResult($analysis, $usage, $model);
+        return new AiCompletionResult($text, $usage, $model);
     }
 }

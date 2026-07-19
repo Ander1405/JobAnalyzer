@@ -1,0 +1,12 @@
+#!/usr/bin/env php
+<?php
+
+$markdown = "Claro, aquí está el perfil reestructurado:\n\n```markdown\n# Perfil profesional\n- Backend Developer, 3 años de experiencia.\n```";
+
+fwrite(STDOUT, json_encode([
+    'result' => $markdown,
+    'duration_ms' => 1500,
+    'total_cost_usd' => 0.02,
+    'usage' => ['input_tokens' => 50, 'output_tokens' => 30],
+]));
+exit(0);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\AI;
 
 use App\DTOs\AiAnalysisResult;
+use App\DTOs\AiCompletionResult;
 use App\DTOs\AiUsage;
 use App\Models\Job;
 use Illuminate\Support\Facades\Http;
@@ -18,6 +19,17 @@ class OpenRouterProvider implements AIProvider
 
     public function analyze(string $perfilMd, Job $job): AiAnalysisResult
     {
+        $completion = $this->complete(JobAnalyzer::systemPrompt(), JobAnalyzer::userPrompt($perfilMd, $job));
+
+        return new AiAnalysisResult(
+            JobAnalyzer::parseAiResponse($completion->text),
+            $completion->usage,
+            $completion->model,
+        );
+    }
+
+    public function complete(string $systemPrompt, string $userPrompt): AiCompletionResult
+    {
         $model = $this->model ?? config('jobhunter.openrouter.model');
 
         $startedAt = microtime(true);
@@ -27,8 +39,8 @@ class OpenRouterProvider implements AIProvider
             ->post(self::ENDPOINT, [
                 'model' => $model,
                 'messages' => [
-                    ['role' => 'system', 'content' => JobAnalyzer::systemPrompt()],
-                    ['role' => 'user', 'content' => JobAnalyzer::userPrompt($perfilMd, $job)],
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user', 'content' => $userPrompt],
                 ],
             ]);
 
@@ -40,8 +52,6 @@ class OpenRouterProvider implements AIProvider
             throw new RuntimeException('Unexpected OpenRouter response format: missing message content.');
         }
 
-        $analysis = JobAnalyzer::parseAiResponse($text);
-
         $usage = new AiUsage(
             durationMs: (int) round((microtime(true) - $startedAt) * 1000),
             inputTokens: $response->json('usage.prompt_tokens'),
@@ -49,6 +59,6 @@ class OpenRouterProvider implements AIProvider
             costUsd: $response->json('usage.cost') !== null ? (float) $response->json('usage.cost') : null,
         );
 
-        return new AiAnalysisResult($analysis, $usage, (string) $model);
+        return new AiCompletionResult($text, $usage, (string) $model);
     }
 }

@@ -114,11 +114,6 @@ PROMPT;
             ."Salario: {$job->salary_raw}";
     }
 
-    public static function buildPrompt(string $perfilMd, Job $job): string
-    {
-        return self::systemPrompt()."\n\n".self::userPrompt($perfilMd, $job);
-    }
-
     /**
      * @return array<string, mixed>
      */
