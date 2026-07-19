@@ -29,6 +29,11 @@ export type Job = {
     application_status: ApplicationStatus;
     ai_provider: string | null;
     ai_analysis: AiAnalysis | null;
+    ai_model: string | null;
+    ai_duration_ms: number | null;
+    ai_input_tokens: number | null;
+    ai_output_tokens: number | null;
+    ai_cost_usd: number | null;
     notion_page_id: string | null;
     error_message: string | null;
     created_at: string;
