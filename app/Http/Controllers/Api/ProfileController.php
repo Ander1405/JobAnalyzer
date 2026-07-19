@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\Profile\ProfileConverter;
-use App\Services\Profile\ResumeTextExtractor;
+use App\Models\Profile;
+use App\Services\Profile\CvImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\File;
@@ -20,31 +20,27 @@ class ProfileController extends Controller
 
         return response()->json([
             'content' => file_exists($path) ? file_get_contents($path) : '',
+            'profile' => Profile::active(),
         ]);
     }
 
-    public function upload(Request $request, ResumeTextExtractor $extractor, ProfileConverter $converter): JsonResponse
+    public function import(Request $request, CvImportService $service): JsonResponse
     {
         $request->validate([
-            'resume' => ['required', File::types(['pdf'])->max(10 * 1024)],
+            'cv' => ['required', File::types(['pdf', 'txt', 'md'])->max(10 * 1024)],
         ]);
 
-        $file = $request->file('resume');
+        $file = $request->file('cv');
 
         try {
-            $text = $extractor->extract($file->getRealPath());
-            $completion = $converter->convert($text);
+            $profile = $service->import($file->getRealPath(), 'default', $file->getClientOriginalExtension());
         } catch (RuntimeException $exception) {
             return response()->json(['message' => $exception->getMessage()], 422);
         }
 
-        $file->storeAs('', 'resume.pdf');
-        file_put_contents(storage_path('app/perfil.md'), $completion->text);
-
         return response()->json([
-            'content' => $completion->text,
-            'model' => $completion->model,
-            'usage' => $completion->usage,
+            'content' => $profile->raw_md,
+            'profile' => $profile,
         ]);
     }
 }

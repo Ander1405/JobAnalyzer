@@ -71,4 +71,16 @@ return [
 
     'match_score_alert_threshold' => (int) env('MATCH_SCORE_ALERT_THRESHOLD', 80),
 
+    /*
+    |--------------------------------------------------------------------------
+    | CV / Profile
+    |--------------------------------------------------------------------------
+    */
+
+    'min_match_to_publish' => (int) env('MIN_MATCH_TO_PUBLISH', 75),
+
+    'active_profile' => env('ACTIVE_PROFILE', 'default'),
+
+    'pdftotext_binary' => env('PDFTOTEXT_BINARY', 'pdftotext'),
+
 ];
