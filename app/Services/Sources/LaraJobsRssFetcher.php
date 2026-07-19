@@ -25,7 +25,13 @@ class LaraJobsRssFetcher implements JobSourceInterface
             throw new RuntimeException('Unable to parse LaraJobs RSS feed.');
         }
 
-        return collect($xml->channel->item ?? [])
+        $items = [];
+
+        foreach ($xml->channel->item as $item) {
+            $items[] = $item;
+        }
+
+        return collect($items)
             ->map(function (SimpleXMLElement $item) {
                 $job = $item->children('job', true);
                 $company = trim((string) $job->company);

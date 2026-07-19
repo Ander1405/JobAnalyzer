@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:job="https://larajobs.com"
+>
+    <channel>
+        <title>LaraJobs</title>
+        <item>
+            <title>Senior Laravel Engineer</title>
+            <link>https://larajobs.com/job/3905</link>
+            <pubDate>Wed, 15 Jul 2026 10:38:27 +0000</pubDate>
+            <job:location><![CDATA[Remote / Europe]]></job:location>
+            <job:job_type><![CDATA[CONTRACTOR]]></job:job_type>
+            <job:company><![CDATA[HelpBnk]]></job:company>
+            <job:tags><![CDATA[MySQL,PHP,React,Redis]]></job:tags>
+            <description><![CDATA[]]></description>
+        </item>
+        <item>
+            <title>Legacy Corp: Backend Developer</title>
+            <link>https://larajobs.com/job/1000</link>
+            <job:location><![CDATA[]]></job:location>
+            <job:job_type><![CDATA[]]></job:job_type>
+            <job:company><![CDATA[]]></job:company>
+            <job:tags><![CDATA[]]></job:tags>
+            <description><![CDATA[We need a backend developer with Laravel experience.]]></description>
+        </item>
+    </channel>
+</rss>
