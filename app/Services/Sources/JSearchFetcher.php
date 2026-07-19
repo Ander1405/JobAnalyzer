@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 
 class JSearchFetcher implements JobSourceInterface
 {
-    private const ENDPOINT = 'https://jsearch.p.rapidapi.com/search';
+    private const ENDPOINT = 'https://jsearch.p.rapidapi.com/search-v2';
 
     public function fetch(): Collection
     {
@@ -41,10 +41,10 @@ class JSearchFetcher implements JobSourceInterface
 
         $response->throw();
 
-        /** @var array<int, array<string, mixed>> $data */
-        $data = $response->json('data', []);
+        /** @var array<int, array<string, mixed>> $jobs */
+        $jobs = $response->json('data.jobs', []);
 
-        return collect($data)
+        return collect($jobs)
             ->map(fn (array $job) => new JobOffer(
                 source: 'jsearch',
                 company: (string) ($job['employer_name'] ?? ''),
@@ -61,6 +61,10 @@ class JSearchFetcher implements JobSourceInterface
      */
     private function normalizeSalary(array $job): ?string
     {
+        if (! empty($job['job_salary_string'])) {
+            return (string) $job['job_salary_string'];
+        }
+
         $min = $job['job_min_salary'] ?? null;
         $max = $job['job_max_salary'] ?? null;
         $currency = $job['job_salary_currency'] ?? null;
