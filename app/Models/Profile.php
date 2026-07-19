@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property array{items: array<int, string>, english_level: string|null}|null $languages
  * @property array<int, string>|null $certifications
  * @property string $raw_md
+ * @property string|null $source_text
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -41,6 +42,7 @@ use Illuminate\Support\Carbon;
     'languages',
     'certifications',
     'raw_md',
+    'source_text',
     'is_active',
 ])]
 class Profile extends Model

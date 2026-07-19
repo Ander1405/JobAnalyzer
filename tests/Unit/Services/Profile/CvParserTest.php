@@ -34,6 +34,7 @@ class CvParserTest extends TestCase
         $this->assertSame('B2', $profile['languages']['english_level']);
         $this->assertNotEmpty($profile['experience']);
         $this->assertSame(['AWS Certified Developer'], $profile['certifications']);
+        $this->assertStringContainsString('Jane Doe', $profile['source_text']);
     }
 
     public function test_it_structures_the_same_cv_from_plain_text(): void
@@ -48,6 +49,7 @@ class CvParserTest extends TestCase
             ['Backend Developer en Acme Corp (2021-2024): lideró la migración a microservicios.', 'Junior Developer en Beta Inc (2019-2021): mantenimiento de APIs REST.'],
             $profile['experience'],
         );
+        $this->assertStringContainsString('Jane Doe', $profile['source_text']);
     }
 
     public function test_it_throws_a_clear_error_for_a_scanned_pdf_without_calling_ai(): void

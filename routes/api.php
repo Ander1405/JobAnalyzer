@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AiSettingsController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ProfileReviewController;
 use App\Http\Controllers\Api\ProfileVariantController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,3 +29,6 @@ Route::get('profile/{profile}', [ProfileVariantController::class, 'show'])->name
 Route::put('profile/{profile}', [ProfileVariantController::class, 'update'])->name('api.profile.variant.update');
 Route::post('profile/{profile}/sync', [ProfileVariantController::class, 'sync'])->name('api.profile.variant.sync');
 Route::post('profile/{profile}/activate', [ProfileVariantController::class, 'activate'])->name('api.profile.variant.activate');
+
+Route::post('profile/{profile}/review', [ProfileReviewController::class, 'review'])->name('api.profile.review');
+Route::post('profile/{profile}/suggestions/apply', [ProfileReviewController::class, 'apply'])->name('api.profile.suggestions.apply');

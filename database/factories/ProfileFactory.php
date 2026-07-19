@@ -35,6 +35,7 @@ class ProfileFactory extends Factory
             'languages' => ['items' => ['Español nativo'], 'english_level' => null],
             'certifications' => [],
             'raw_md' => "# {$name}\n\n## Resumen\n".fake()->paragraph(),
+            'source_text' => "{$name}\n".fake()->paragraph(),
             'is_active' => false,
         ];
     }
@@ -42,5 +43,10 @@ class ProfileFactory extends Factory
     public function active(): self
     {
         return $this->state(fn () => ['is_active' => true]);
+    }
+
+    public function withoutSourceText(): self
+    {
+        return $this->state(fn () => ['source_text' => null]);
     }
 }

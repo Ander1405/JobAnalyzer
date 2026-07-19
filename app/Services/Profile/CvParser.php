@@ -35,6 +35,7 @@ class CvParser
      *     education: array<int, string>,
      *     languages: array{items: array<int, string>, english_level: string|null},
      *     certifications: array<int, string>,
+     *     source_text: string,
      * }
      */
     public function parse(string $absolutePath, ?string $extension = null): array
@@ -43,7 +44,7 @@ class CvParser
 
         $text = match ($extension) {
             'pdf' => $this->extractor->extract($absolutePath),
-            'txt', 'md' => trim((string) file_get_contents($absolutePath)),
+            'txt', 'md' => mb_scrub(trim((string) file_get_contents($absolutePath)), 'UTF-8'),
             default => throw new RuntimeException("Unsupported CV file type [.{$extension}]. Upload a PDF, TXT or MD file."),
         };
 
@@ -51,7 +52,7 @@ class CvParser
             throw new RuntimeException('The CV file contains no extractable text.');
         }
 
-        return $this->structure($text);
+        return [...$this->structure($text), 'source_text' => $text];
     }
 
     /**

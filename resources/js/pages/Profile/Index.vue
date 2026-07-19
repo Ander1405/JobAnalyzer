@@ -3,13 +3,41 @@ import { Head, Link } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
 import { importMethod as importCv } from '@/actions/App/Http/Controllers/Api/ProfileController';
 import {
+    apply as applySuggestions,
+    review as reviewWithAi,
+} from '@/actions/App/Http/Controllers/Api/ProfileReviewController';
+import {
     activate,
     index as profilesIndex,
     store as storeVariant,
     sync as syncVariant,
     update as updateVariant,
 } from '@/actions/App/Http/Controllers/Api/ProfileVariantController';
-import type { Profile } from '@/types/profile';
+import { formatCost, formatDuration } from '@/lib/utils';
+import type {
+    Profile,
+    ProfileReviewUsage,
+    ProfileSuggestion,
+    ProfileSuggestionAction,
+    ProfileSuggestionField,
+} from '@/types/profile';
+
+const FIELD_LABELS: Record<ProfileSuggestionField, string> = {
+    headline: 'Titular',
+    summary: 'Resumen',
+    english_level: 'Nivel de inglés',
+    experience: 'Experiencia',
+    skills: 'Skills',
+    education: 'Educación',
+    certifications: 'Certificaciones',
+    languages: 'Idiomas',
+};
+
+const ACTION_LABELS: Record<ProfileSuggestionAction, string> = {
+    replace: 'Reemplazar',
+    add: 'Agregar',
+    remove: 'Eliminar',
+};
 
 const ENGLISH_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
@@ -31,6 +59,14 @@ const newVariantError = ref<string | null>(null);
 const creatingVariant = ref(false);
 
 const rawMarkdown = ref('');
+
+const reviewing = ref(false);
+const reviewError = ref<string | null>(null);
+const reviewUsage = ref<ProfileReviewUsage | null>(null);
+const suggestions = ref<ProfileSuggestion[]>([]);
+const approved = ref<Record<string, boolean>>({});
+const applying = ref(false);
+const applyError = ref<string | null>(null);
 
 type EditableForm = {
     label: string;
@@ -66,6 +102,20 @@ const selected = computed(
         null,
 );
 
+const corrections = computed(() =>
+    suggestions.value.filter(
+        (suggestion) => suggestion.category === 'correction',
+    ),
+);
+const improvements = computed(() =>
+    suggestions.value.filter(
+        (suggestion) => suggestion.category === 'improvement',
+    ),
+);
+const approvedSuggestions = computed(() =>
+    suggestions.value.filter((suggestion) => approved.value[suggestion.id]),
+);
+
 onMounted(loadProfiles);
 
 async function loadProfiles(selectSlug?: string) {
@@ -95,6 +145,12 @@ async function loadProfiles(selectSlug?: string) {
 function selectProfile(slug: string | null) {
     selectedSlug.value = slug;
     const profile = profiles.value.find((item) => item.slug === slug) ?? null;
+
+    reviewError.value = null;
+    reviewUsage.value = null;
+    suggestions.value = [];
+    approved.value = {};
+    applyError.value = null;
 
     if (!profile) {
         form.value = emptyForm();
@@ -259,6 +315,90 @@ async function syncFromMarkdown() {
         await loadProfiles(selected.value.slug);
     } finally {
         syncing.value = false;
+    }
+}
+
+function actionLabel(action: ProfileSuggestionAction): string {
+    return ACTION_LABELS[action];
+}
+
+async function requestReview() {
+    if (!selected.value) {
+        return;
+    }
+
+    reviewing.value = true;
+    reviewError.value = null;
+    suggestions.value = [];
+    approved.value = {};
+    reviewUsage.value = null;
+
+    try {
+        const response = await fetch(reviewWithAi.url(selected.value.slug), {
+            method: 'post',
+            headers: { Accept: 'application/json' },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            reviewError.value =
+                data.message ?? 'No se pudo revisar el perfil con IA.';
+
+            return;
+        }
+
+        suggestions.value = data.suggestions;
+        reviewUsage.value = data.usage;
+    } catch {
+        reviewError.value = 'No se pudo conectar con el servidor.';
+    } finally {
+        reviewing.value = false;
+    }
+}
+
+async function applyApproved() {
+    if (!selected.value || approvedSuggestions.value.length === 0) {
+        return;
+    }
+
+    const slug = selected.value.slug;
+    applying.value = true;
+    applyError.value = null;
+
+    try {
+        const response = await fetch(applySuggestions.url(slug), {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
+            body: JSON.stringify({
+                suggestions: approvedSuggestions.value.map((suggestion) => ({
+                    field: suggestion.field,
+                    action: suggestion.action,
+                    index: suggestion.index,
+                    suggested: suggestion.suggested,
+                })),
+            }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            applyError.value =
+                data.message ?? 'No se pudieron aplicar los cambios.';
+
+            return;
+        }
+
+        suggestions.value = [];
+        approved.value = {};
+        reviewUsage.value = null;
+
+        await loadProfiles(slug);
+    } finally {
+        applying.value = false;
     }
 }
 
@@ -587,6 +727,156 @@ async function createVariant() {
                     >
                         {{ saving ? 'Guardando…' : 'Guardar' }}
                     </button>
+                </section>
+
+                <section
+                    class="mb-6 rounded-lg border border-gray-200 p-4 dark:border-gray-800"
+                >
+                    <div class="mb-2 flex items-center justify-between">
+                        <h2 class="text-sm font-semibold">Revisión con IA</h2>
+                        <button
+                            type="button"
+                            :disabled="reviewing || !selected.source_text"
+                            class="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                            @click="requestReview"
+                        >
+                            {{ reviewing ? 'Analizando…' : 'Revisar con IA' }}
+                        </button>
+                    </div>
+                    <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                        Compara el CV original con el perfil parseado y sugiere
+                        correcciones y mejoras. Nada se aplica automáticamente:
+                        aprueba cada sugerencia antes de aplicarla.
+                    </p>
+
+                    <p
+                        v-if="!selected.source_text"
+                        class="mb-2 text-xs text-gray-500 dark:text-gray-400"
+                    >
+                        Este perfil no tiene el CV original guardado. Reimporta
+                        la hoja de vida para habilitar la revisión con IA.
+                    </p>
+
+                    <p
+                        v-if="reviewError"
+                        class="mb-2 text-sm text-red-600 dark:text-red-400"
+                    >
+                        {{ reviewError }}
+                    </p>
+
+                    <p
+                        v-if="reviewUsage"
+                        class="mb-3 text-xs text-gray-500 dark:text-gray-400"
+                    >
+                        ⏱ {{ formatDuration(reviewUsage.durationMs) }} · 💰
+                        {{ formatCost(reviewUsage.costUsd) }}
+                    </p>
+
+                    <template v-if="suggestions.length > 0">
+                        <template
+                            v-for="group in [
+                                {
+                                    key: 'correction' as const,
+                                    label: 'Correcciones',
+                                    items: corrections,
+                                },
+                                {
+                                    key: 'improvement' as const,
+                                    label: 'Mejoras',
+                                    items: improvements,
+                                },
+                            ]"
+                            :key="group.key"
+                        >
+                            <template v-if="group.items.length > 0">
+                                <h3
+                                    class="mt-3 mb-1 text-xs font-semibold text-gray-600 dark:text-gray-400"
+                                >
+                                    {{ group.label }}
+                                </h3>
+                                <div
+                                    v-for="suggestion in group.items"
+                                    :key="suggestion.id"
+                                    class="mb-2 flex items-start gap-2 rounded-md bg-gray-50 p-2 text-sm dark:bg-gray-900"
+                                >
+                                    <input
+                                        :id="suggestion.id"
+                                        type="checkbox"
+                                        class="mt-1"
+                                        :checked="!!approved[suggestion.id]"
+                                        @change="
+                                            approved[suggestion.id] = (
+                                                $event.target as HTMLInputElement
+                                            ).checked
+                                        "
+                                    />
+                                    <label :for="suggestion.id" class="flex-1">
+                                        <span class="font-medium">{{
+                                            FIELD_LABELS[suggestion.field]
+                                        }}</span>
+                                        <span
+                                            v-if="suggestion.index !== null"
+                                            class="text-gray-400"
+                                        >
+                                            #{{ suggestion.index + 1 }}</span
+                                        >
+                                        <span class="text-gray-400">
+                                            ·
+                                            {{
+                                                actionLabel(suggestion.action)
+                                            }}</span
+                                        >
+                                        <div
+                                            v-if="suggestion.current"
+                                            class="text-xs text-gray-500 line-through dark:text-gray-500"
+                                        >
+                                            {{ suggestion.current }}
+                                        </div>
+                                        <div
+                                            v-if="suggestion.suggested"
+                                            class="text-xs text-gray-700 dark:text-gray-300"
+                                        >
+                                            {{ suggestion.suggested }}
+                                        </div>
+                                        <div
+                                            class="mt-1 text-xs text-gray-400 italic"
+                                        >
+                                            {{ suggestion.rationale }}
+                                        </div>
+                                    </label>
+                                </div>
+                            </template>
+                        </template>
+
+                        <p
+                            v-if="applyError"
+                            class="mb-2 text-sm text-red-600 dark:text-red-400"
+                        >
+                            {{ applyError }}
+                        </p>
+
+                        <button
+                            type="button"
+                            :disabled="
+                                applying || approvedSuggestions.length === 0
+                            "
+                            class="mt-2 rounded-md bg-[#1b1b18] px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-50 dark:bg-white dark:text-[#1b1b18] dark:hover:bg-gray-200"
+                            @click="applyApproved"
+                        >
+                            {{
+                                applying
+                                    ? 'Aplicando…'
+                                    : `Aplicar seleccionadas (${approvedSuggestions.length})`
+                            }}
+                        </button>
+                    </template>
+
+                    <p
+                        v-else-if="!reviewing && !reviewError"
+                        class="text-xs text-gray-500 dark:text-gray-400"
+                    >
+                        Sin sugerencias todavía.
+                    </p>
                 </section>
 
                 <section

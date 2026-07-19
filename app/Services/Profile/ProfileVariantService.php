@@ -42,6 +42,7 @@ class ProfileVariantService
             'label' => $label,
             ...$data,
             'raw_md' => $this->builder->toMarkdown($data),
+            'source_text' => $default->source_text,
             'is_active' => false,
         ]);
     }
