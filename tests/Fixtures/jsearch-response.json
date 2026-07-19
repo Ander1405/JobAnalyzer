@@ -1,25 +1,27 @@
 {
     "status": "OK",
-    "data": [
-        {
-            "employer_name": "Acme Corp",
-            "job_title": "Senior PHP Developer",
-            "job_description": "We are looking for a Laravel expert to join our team.",
-            "job_apply_link": "https://example.com/jobs/123",
-            "job_employment_type": "FULLTIME",
-            "job_min_salary": 4000,
-            "job_max_salary": 6000,
-            "job_salary_currency": "USD"
-        },
-        {
-            "employer_name": "Beta LLC",
-            "job_title": "Remote Full Stack Engineer",
-            "job_description": "Vue and Laravel required.",
-            "job_apply_link": "https://example.com/jobs/456",
-            "job_employment_type": "CONTRACTOR",
-            "job_min_salary": null,
-            "job_max_salary": null,
-            "job_salary_currency": null
-        }
-    ]
+    "data": {
+        "jobs": [
+            {
+                "employer_name": "Acme Corp",
+                "job_title": "Senior PHP Developer",
+                "job_description": "We are looking for a Laravel expert to join our team.",
+                "job_apply_link": "https://example.com/jobs/123",
+                "job_employment_type": "FULLTIME",
+                "job_min_salary": 4000,
+                "job_max_salary": 6000,
+                "job_salary_string": "4K-6K a month"
+            },
+            {
+                "employer_name": "Beta LLC",
+                "job_title": "Remote Full Stack Engineer",
+                "job_description": "Vue and Laravel required.",
+                "job_apply_link": "https://example.com/jobs/456",
+                "job_employment_type": "CONTRACTOR",
+                "job_min_salary": null,
+                "job_max_salary": null,
+                "job_salary_string": null
+            }
+        ]
+    }
 }
