@@ -39,4 +39,16 @@ class ClaudeCliProviderTest extends TestCase
 
         (new ClaudeCliProvider)->analyze('# Perfil de prueba', $job);
     }
+
+    public function test_it_passes_home_through_to_the_subprocess_even_when_the_parent_env_lacks_it(): void
+    {
+        // PHP-FPM pools with clear_env=yes (Valet's default) strip HOME from the process
+        // Symfony's Process inherits, which makes the Claude CLI report "not logged in"
+        // even when the user is. This asserts HOME is explicitly forwarded regardless.
+        config(['jobhunter.claude_cli.binary' => base_path('tests/Fixtures/fake-claude-cli-echo-home')]);
+
+        $result = (new ClaudeCliProvider)->complete('system', 'user');
+
+        $this->assertNotSame('', $result->text);
+    }
 }

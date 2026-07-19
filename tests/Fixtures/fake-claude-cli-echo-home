@@ -1,0 +1,10 @@
+#!/usr/bin/env php
+<?php
+
+fwrite(STDOUT, json_encode([
+    'result' => (string) getenv('HOME'),
+    'duration_ms' => 1,
+    'total_cost_usd' => 0.0,
+    'usage' => ['input_tokens' => 0, 'output_tokens' => 0],
+]));
+exit(0);

@@ -43,6 +43,10 @@ class ClaudeCliProvider implements AIProvider
         $process->setInput($systemPrompt."\n\n".$userPrompt);
         $process->setTimeout(120);
 
+        if ($home = $this->resolveHome()) {
+            $process->setEnv(['HOME' => $home]);
+        }
+
         $startedAt = microtime(true);
 
         try {
@@ -56,7 +60,8 @@ class ClaudeCliProvider implements AIProvider
 
         if (! $process->isSuccessful()) {
             throw new RuntimeException(
-                "Claude CLI exited with code {$process->getExitCode()}. Verify you are logged in (run `claude` in your terminal). Output: {$process->getErrorOutput()}"
+                "Claude CLI exited with code {$process->getExitCode()}. Verify you are logged in (run `claude` in your terminal). ".
+                "Stdout: {$process->getOutput()} Stderr: {$process->getErrorOutput()}"
             );
         }
 
@@ -74,5 +79,28 @@ class ClaudeCliProvider implements AIProvider
         );
 
         return new AiCompletionResult($decoded['result'], $usage, (string) ($model ?: 'default'));
+    }
+
+    /**
+     * PHP-FPM pools commonly run with `clear_env = yes` (Valet's default), which strips
+     * HOME from the environment Process inherits — the Claude CLI then can't find its
+     * login session and reports "Not logged in" even though the user is. `getenv()` is
+     * empty in that case too, so fall back to reading the OS user database directly.
+     */
+    private function resolveHome(): ?string
+    {
+        $home = getenv('HOME');
+
+        if (is_string($home) && $home !== '') {
+            return $home;
+        }
+
+        if (function_exists('posix_getpwuid') && function_exists('posix_getuid')) {
+            $info = posix_getpwuid(posix_getuid());
+
+            return is_array($info) ? $info['dir'] : null;
+        }
+
+        return null;
     }
 }

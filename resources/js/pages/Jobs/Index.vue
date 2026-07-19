@@ -24,7 +24,7 @@ const meta = ref<PaginationMeta | null>(null);
 const filters = ref<JobFilters>({
     status: '',
     source: '',
-    minMatch: null,
+    minMatch: page.props.minMatchToPublish,
     search: '',
 });
 
@@ -59,7 +59,9 @@ onMounted(() => {
     loadSources();
 });
 
-function buildParams(overrides: Record<string, string> = {}): URLSearchParams {
+function buildParams(
+    overrides: Record<string, string | null> = {},
+): URLSearchParams {
     const params = new URLSearchParams();
 
     if (filters.value.status) {
@@ -79,7 +81,11 @@ function buildParams(overrides: Record<string, string> = {}): URLSearchParams {
     }
 
     for (const [key, value] of Object.entries(overrides)) {
-        params.set(key, value);
+        if (value === null) {
+            params.delete(key);
+        } else {
+            params.set(key, value);
+        }
     }
 
     return params;
@@ -146,7 +152,11 @@ async function analyzePending() {
     };
 
     try {
-        const params = buildParams({ status: 'fetched', per_page: '500' });
+        const params = buildParams({
+            status: 'fetched',
+            per_page: '500',
+            min_match: null,
+        });
         const pendingResponse = await fetch(`/api/jobs?${params.toString()}`, {
             headers: { Accept: 'application/json' },
         });

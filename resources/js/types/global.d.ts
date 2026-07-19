@@ -20,6 +20,7 @@ declare module '@inertiajs/core' {
             auth: Auth;
             sidebarOpen: boolean;
             matchScoreAlertThreshold: number;
+            minMatchToPublish: number;
             [key: string]: unknown;
         };
     }
