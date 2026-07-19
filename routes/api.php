@@ -18,4 +18,4 @@ Route::get('ai/providers', [AiSettingsController::class, 'providers'])->name('ap
 Route::get('ai/providers/{provider}/models', [AiSettingsController::class, 'models'])->name('api.ai.providers.models');
 
 Route::get('profile', [ProfileController::class, 'show'])->name('api.profile.show');
-Route::post('profile/upload', [ProfileController::class, 'upload'])->name('api.profile.upload');
+Route::post('profile/import', [ProfileController::class, 'import'])->name('api.profile.import');

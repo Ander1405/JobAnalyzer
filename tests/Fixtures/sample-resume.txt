@@ -1,0 +1,25 @@
+Jane Doe
+Laravel Developer
+jane.doe@example.com
++1 555 123 4567
+linkedin.com/in/janedoe
+
+Resumen
+Desarrolladora backend con 5 anios de experiencia construyendo APIs con Laravel y Vue.js.
+
+Experiencia
+- Backend Developer en Acme Corp (2021-2024): lideró la migración a microservicios.
+- Junior Developer en Beta Inc (2019-2021): mantenimiento de APIs REST.
+
+Skills
+PHP, Laravel, Vue.js, MySQL, Docker
+
+Educación
+Ingeniería de Sistemas, Universidad Nacional (2015-2019)
+
+Idiomas
+Español nativo
+Inglés B2
+
+Certificaciones
+AWS Certified Developer

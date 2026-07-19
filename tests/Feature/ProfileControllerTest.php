@@ -38,31 +38,49 @@ class ProfileControllerTest extends TestCase
         $response->assertOk()->assertJson(['content' => $this->originalProfile]);
     }
 
-    public function test_it_uploads_and_converts_a_resume_pdf(): void
+    public function test_it_imports_and_structures_a_resume_pdf_without_calling_ai(): void
     {
-        config(['jobhunter.claude_cli.binary' => base_path('tests/Fixtures/fake-claude-cli-with-preamble')]);
+        $file = new UploadedFile(base_path('tests/Fixtures/sample-resume-full.pdf'), 'resume.pdf', 'application/pdf', null, true);
 
-        $file = new UploadedFile(base_path('tests/Fixtures/sample-resume.pdf'), 'resume.pdf', 'application/pdf', null, true);
+        $response = $this->post('/api/profile/import', ['cv' => $file], ['Accept' => 'application/json']);
 
-        $response = $this->post('/api/profile/upload', ['resume' => $file], ['Accept' => 'application/json']);
+        $response->assertOk();
+        $response->assertJsonPath('profile.slug', 'default');
+        $response->assertJsonPath('profile.contact.email', 'jane.doe@example.com');
+        $response->assertJsonPath('profile.languages.english_level', 'B2');
+        $response->assertJsonPath('profile.is_active', true);
 
-        $response->assertOk()->assertJson([
-            'content' => "# Perfil profesional\n- Backend Developer, 3 años de experiencia.",
-            'model' => 'default',
-        ]);
-
-        $this->assertSame(
-            "# Perfil profesional\n- Backend Developer, 3 años de experiencia.",
-            file_get_contents($this->profilePath),
-        );
+        $this->assertDatabaseHas('profiles', ['slug' => 'default', 'is_active' => true]);
+        $this->assertStringContainsString('jane.doe@example.com', file_get_contents($this->profilePath));
     }
 
-    public function test_it_rejects_a_non_pdf_upload(): void
+    public function test_it_imports_a_plain_text_resume(): void
     {
-        $file = UploadedFile::fake()->create('resume.txt', 10);
+        $file = new UploadedFile(base_path('tests/Fixtures/sample-resume.txt'), 'resume.txt', 'text/plain', null, true);
 
-        $response = $this->post('/api/profile/upload', ['resume' => $file], ['Accept' => 'application/json']);
+        $response = $this->post('/api/profile/import', ['cv' => $file], ['Accept' => 'application/json']);
 
-        $response->assertUnprocessable()->assertJsonValidationErrors('resume');
+        $response->assertOk();
+        $response->assertJsonPath('profile.contact.name', 'Jane Doe');
+    }
+
+    public function test_it_rejects_an_unsupported_file_type(): void
+    {
+        $file = UploadedFile::fake()->create('resume.docx', 10);
+
+        $response = $this->post('/api/profile/import', ['cv' => $file], ['Accept' => 'application/json']);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('cv');
+    }
+
+    public function test_it_rejects_a_scanned_pdf_with_no_extractable_text(): void
+    {
+        $file = new UploadedFile(base_path('tests/Fixtures/sample-resume-scanned.pdf'), 'scanned.pdf', 'application/pdf', null, true);
+
+        $response = $this->post('/api/profile/import', ['cv' => $file], ['Accept' => 'application/json']);
+
+        $response->assertStatus(422);
+        $response->assertJsonStructure(['message']);
+        $this->assertDatabaseMissing('profiles', ['slug' => 'default']);
     }
 }

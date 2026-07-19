@@ -1,21 +1,30 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { formatCost, formatDuration } from '@/lib/utils';
-import type { ProfileUploadResponse, ProfileUsage } from '@/types/profile';
+import {
+    importMethod as importCv,
+    show,
+} from '@/actions/App/Http/Controllers/Api/ProfileController';
+import type {
+    Profile,
+    ProfileImportResponse,
+    ProfileShowResponse,
+} from '@/types/profile';
 
 const content = ref('');
+const profile = ref<Profile | null>(null);
 const expanded = ref(false);
 const uploading = ref(false);
 const error = ref<string | null>(null);
-const lastUsage = ref<{ model: string; usage: ProfileUsage } | null>(null);
+const justImported = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 
 onMounted(async () => {
-    const response = await fetch('/api/profile', {
+    const response = await fetch(show.url(), {
         headers: { Accept: 'application/json' },
     });
-    const data = await response.json();
+    const data = (await response.json()) as ProfileShowResponse;
     content.value = data.content;
+    profile.value = data.profile;
 });
 
 async function upload() {
@@ -29,11 +38,11 @@ async function upload() {
     error.value = null;
 
     const formData = new FormData();
-    formData.append('resume', file);
+    formData.append('cv', file);
 
     try {
-        const response = await fetch('/api/profile/upload', {
-            method: 'POST',
+        const response = await fetch(importCv.url(), {
+            method: 'post',
             headers: { Accept: 'application/json' },
             body: formData,
         });
@@ -47,9 +56,10 @@ async function upload() {
             return;
         }
 
-        const upload = data as ProfileUploadResponse;
-        content.value = upload.content;
-        lastUsage.value = { model: upload.model, usage: upload.usage };
+        const imported = data as ProfileImportResponse;
+        content.value = imported.content;
+        profile.value = imported.profile;
+        justImported.value = true;
         expanded.value = true;
     } catch {
         error.value = 'No se pudo conectar con el servidor.';
@@ -75,7 +85,7 @@ async function upload() {
             <input
                 ref="fileInput"
                 type="file"
-                accept="application/pdf"
+                accept=".pdf,.txt,.md"
                 class="max-w-56 text-xs"
             />
 
@@ -85,7 +95,7 @@ async function upload() {
                 class="rounded-md bg-[#1b1b18] px-3 py-1.5 text-xs font-medium text-white hover:bg-black disabled:opacity-50 dark:bg-white dark:text-[#1b1b18] dark:hover:bg-gray-200"
                 @click="upload"
             >
-                {{ uploading ? 'Subiendo…' : 'Subir CV' }}
+                {{ uploading ? 'Importando…' : 'Subir CV' }}
             </button>
 
             <button
@@ -102,15 +112,13 @@ async function upload() {
             {{ error }}
         </p>
 
-        <p v-if="lastUsage" class="text-xs text-gray-500 dark:text-gray-400">
-            ✅ Perfil actualizado · {{ lastUsage.model }} ·
-            {{ formatDuration(lastUsage.usage.durationMs) }} ·
-            {{
-                (lastUsage.usage.inputTokens ?? 0) +
-                (lastUsage.usage.outputTokens ?? 0)
-            }}
-            tokens ·
-            {{ formatCost(lastUsage.usage.costUsd) }}
+        <p
+            v-if="justImported && profile"
+            class="text-xs text-gray-500 dark:text-gray-400"
+        >
+            ✅ Perfil actualizado (parseo determinista, sin IA) ·
+            {{ profile.skills?.length ?? 0 }} skills detectados · Inglés:
+            {{ profile.languages?.english_level ?? 'no detectado' }}
         </p>
 
         <pre
