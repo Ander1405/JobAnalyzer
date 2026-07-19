@@ -24,7 +24,7 @@ watch(
     () => {
         publishError.value = null;
         checkedTailoring.value =
-            props.job?.ai_analysis?.tailoring_cv.map(() => false) ?? [];
+            props.job?.ai_analysis?.tailoring_cv?.map(() => false) ?? [];
     },
     { immediate: true },
 );
@@ -248,7 +248,7 @@ async function updateStatus(event: Event) {
                     <div>
                         <dt class="text-gray-500">Inglés requerido</dt>
                         <dd>
-                            {{ analysis.ingles_requerido }}
+                            {{ analysis.ingles_requerido ?? 'No especificado' }}
                             <span
                                 v-if="analysis.alerta_ingles"
                                 title="Supera tu nivel declarado"
@@ -258,7 +258,7 @@ async function updateStatus(event: Event) {
                     </div>
                 </dl>
 
-                <section v-if="analysis.red_flags.length" class="mb-4">
+                <section v-if="analysis.red_flags?.length" class="mb-4">
                     <h3 class="mb-2 text-sm font-semibold">🚩 Red flags</h3>
                     <ul
                         class="list-inside list-disc space-y-1 text-sm text-red-700 dark:text-red-400"

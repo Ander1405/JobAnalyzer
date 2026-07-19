@@ -6,16 +6,20 @@ import JobDetail from '@/components/JobDetail.vue';
 import JobsTable from '@/components/JobsTable.vue';
 import type { JobFilters } from '@/components/JobsTable.vue';
 import { formatCost, formatDuration } from '@/lib/utils';
-import type { Job } from '@/types/job';
+import type { Job, PaginatedJobs, PaginationMeta } from '@/types/job';
 
 const page = usePage();
 const threshold = page.props.matchScoreAlertThreshold;
+
+const PER_PAGE = 20;
 
 const jobs = ref<Job[]>([]);
 const sources = ref<string[]>([]);
 const loading = ref(false);
 const fetching = ref(false);
 const analyzing = ref(false);
+const currentPage = ref(1);
+const meta = ref<PaginationMeta | null>(null);
 
 const filters = ref<JobFilters>({
     status: '',
@@ -43,6 +47,7 @@ let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 watch(
     filters,
     () => {
+        currentPage.value = 1;
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(loadJobs, 300);
     },
@@ -54,9 +59,7 @@ onMounted(() => {
     loadSources();
 });
 
-async function loadJobs() {
-    loading.value = true;
-
+function buildParams(overrides: Record<string, string> = {}): URLSearchParams {
     const params = new URLSearchParams();
 
     if (filters.value.status) {
@@ -75,11 +78,29 @@ async function loadJobs() {
         params.set('search', filters.value.search);
     }
 
+    for (const [key, value] of Object.entries(overrides)) {
+        params.set(key, value);
+    }
+
+    return params;
+}
+
+async function loadJobs() {
+    loading.value = true;
+
+    const params = buildParams({
+        page: String(currentPage.value),
+        per_page: String(PER_PAGE),
+    });
+
     try {
         const response = await fetch(`/api/jobs?${params.toString()}`, {
             headers: { Accept: 'application/json' },
         });
-        jobs.value = await response.json();
+        const paginated: PaginatedJobs = await response.json();
+        jobs.value = paginated.data;
+        meta.value = paginated.meta;
+        currentPage.value = paginated.meta.current_page;
     } finally {
         loading.value = false;
     }
@@ -90,6 +111,11 @@ async function loadSources() {
         headers: { Accept: 'application/json' },
     });
     sources.value = await response.json();
+}
+
+function goToPage(nextPage: number) {
+    currentPage.value = nextPage;
+    loadJobs();
 }
 
 async function searchNew() {
@@ -120,9 +146,13 @@ async function analyzePending() {
     };
 
     try {
-        const pending = jobs.value.filter((job) => job.status === 'fetched');
+        const params = buildParams({ status: 'fetched', per_page: '500' });
+        const pendingResponse = await fetch(`/api/jobs?${params.toString()}`, {
+            headers: { Accept: 'application/json' },
+        });
+        const pending: PaginatedJobs = await pendingResponse.json();
 
-        for (const job of pending) {
+        for (const job of pending.data) {
             const response = await fetch(`/api/jobs/${job.id}/analyze`, {
                 method: 'POST',
                 headers: { Accept: 'application/json' },
@@ -217,6 +247,7 @@ function onUpdated(updated: Job) {
                 v-model:filters="filters"
                 :jobs="jobs"
                 :sources="sources"
+                :meta="meta"
                 :loading="loading"
                 :fetching="fetching"
                 :analyzing="analyzing"
@@ -224,6 +255,7 @@ function onUpdated(updated: Job) {
                 @select="selectJob"
                 @search-new="searchNew"
                 @analyze-pending="analyzePending"
+                @page-change="goToPage"
             />
         </div>
 
