@@ -6,8 +6,10 @@ namespace App\Models;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\JobStatus;
+use Database\Factories\JobFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -51,6 +53,9 @@ use Illuminate\Support\Carbon;
 ])]
 class Job extends Model
 {
+    /** @use HasFactory<JobFactory> */
+    use HasFactory;
+
     /**
      * Get the attributes that should be cast.
      *

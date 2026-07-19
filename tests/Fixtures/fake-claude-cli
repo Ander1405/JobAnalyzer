@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+
+$analysis = [
+    'match_score' => 88,
+    'diagnostico' => 'Encaje sólido con el perfil del candidato.',
+    'tips_postulacion' => ['Menciona tu experiencia con Laravel.'],
+    'tailoring_cv' => ['Agrega métricas de impacto.'],
+    'idioma' => 'Español',
+    'tipo_contrato' => 'Indefinido',
+    'salario_normalizado' => '4.000-6.000 USD/mes',
+    'moneda' => 'USD',
+];
+
+fwrite(STDOUT, json_encode(['result' => json_encode($analysis)]));
+exit(0);

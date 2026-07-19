@@ -1,0 +1,5 @@
+#!/usr/bin/env php
+<?php
+
+fwrite(STDERR, 'not logged in');
+exit(1);
