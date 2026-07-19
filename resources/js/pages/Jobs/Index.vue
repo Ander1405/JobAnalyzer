@@ -5,6 +5,7 @@ import AiProviderSelector from '@/components/AiProviderSelector.vue';
 import JobDetail from '@/components/JobDetail.vue';
 import JobsTable from '@/components/JobsTable.vue';
 import type { JobFilters } from '@/components/JobsTable.vue';
+import ProfileUpload from '@/components/ProfileUpload.vue';
 import { formatCost, formatDuration } from '@/lib/utils';
 import type { Job } from '@/types/job';
 
@@ -162,6 +163,8 @@ function onUpdated(updated: Job) {
     >
         <div class="mx-auto max-w-6xl">
             <h1 class="mb-4 text-2xl font-semibold">JobHunter</h1>
+
+            <ProfileUpload class="mb-4" />
 
             <AiProviderSelector class="mb-6" />
 
