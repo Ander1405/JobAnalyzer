@@ -12,6 +12,9 @@ export type AiAnalysis = {
     tipo_contrato: string;
     salario_normalizado: string;
     moneda: string;
+    ingles_requerido: string;
+    alerta_ingles: boolean;
+    red_flags: string[];
 };
 
 export type Job = {

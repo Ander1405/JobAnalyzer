@@ -61,6 +61,9 @@ class JobFactory extends Factory
                 'tipo_contrato' => 'Indefinido',
                 'salario_normalizado' => '4.000-6.000 USD/mes',
                 'moneda' => 'USD',
+                'ingles_requerido' => 'Intermedio',
+                'alerta_ingles' => false,
+                'red_flags' => [],
             ],
         ]);
     }

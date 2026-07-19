@@ -27,6 +27,9 @@ class GeminiProviderTest extends TestCase
             'tipo_contrato' => 'Freelance',
             'salario_normalizado' => 'No especificado',
             'moneda' => 'No especificado',
+            'ingles_requerido' => 'Avanzado',
+            'alerta_ingles' => true,
+            'red_flags' => [],
         ];
 
         Http::fake([

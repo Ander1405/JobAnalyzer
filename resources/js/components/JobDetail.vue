@@ -236,7 +236,32 @@ async function updateStatus(event: Event) {
                         <dt class="text-gray-500">Moneda</dt>
                         <dd>{{ analysis.moneda }}</dd>
                     </div>
+                    <div>
+                        <dt class="text-gray-500">Inglés requerido</dt>
+                        <dd>
+                            {{ analysis.ingles_requerido }}
+                            <span
+                                v-if="analysis.alerta_ingles"
+                                title="Supera tu nivel declarado"
+                                >⚠️</span
+                            >
+                        </dd>
+                    </div>
                 </dl>
+
+                <section v-if="analysis.red_flags.length" class="mb-4">
+                    <h3 class="mb-2 text-sm font-semibold">🚩 Red flags</h3>
+                    <ul
+                        class="list-inside list-disc space-y-1 text-sm text-red-700 dark:text-red-400"
+                    >
+                        <li
+                            v-for="(flag, index) in analysis.red_flags"
+                            :key="index"
+                        >
+                            {{ flag }}
+                        </li>
+                    </ul>
+                </section>
             </template>
             <p v-else class="mb-4 text-sm text-gray-500 dark:text-gray-400">
                 Esta vacante todavía no ha sido analizada.
