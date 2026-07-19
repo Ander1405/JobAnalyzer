@@ -31,7 +31,17 @@ class ResumeTextExtractor
             );
         }
 
-        return $text;
+        return $this->sanitizeUtf8($text);
+    }
+
+    /**
+     * PDF font encodings (e.g. custom Differences maps) don't always map cleanly to UTF-8,
+     * so smalot/pdfparser and pdftotext can both emit invalid byte sequences that later
+     * break json_encode() when the parsed profile fields are cast to JSON.
+     */
+    private function sanitizeUtf8(string $text): string
+    {
+        return mb_scrub($text, 'UTF-8');
     }
 
     private function extractWithPdftotext(string $absolutePath): ?string
