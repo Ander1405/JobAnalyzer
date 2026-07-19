@@ -40,7 +40,7 @@ class JobController extends Controller
 
         if ($request->filled('min_match')) {
             $minMatch = (float) $request->query('min_match');
-            $jobs = $jobs->filter(fn (Job $job) => $this->matchScore($job) >= $minMatch)->values();
+            $jobs = $jobs->filter(fn (Job $job) => $job->ai_analysis === null || $this->matchScore($job) >= $minMatch)->values();
         }
 
         $jobs = $jobs->sortByDesc(fn (Job $job) => $this->matchScore($job))->values();
