@@ -41,6 +41,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'matchScoreAlertThreshold' => config('jobhunter.match_score_alert_threshold'),
         ];
     }
 }
