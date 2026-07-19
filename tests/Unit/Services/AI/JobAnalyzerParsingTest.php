@@ -21,6 +21,9 @@ class JobAnalyzerParsingTest extends TestCase
             'tipo_contrato' => 'Indefinido',
             'salario_normalizado' => 'No especificado',
             'moneda' => 'No especificado',
+            'ingles_requerido' => 'No especificado',
+            'alerta_ingles' => false,
+            'red_flags' => [],
         ], $overrides);
     }
 
@@ -63,5 +66,25 @@ class JobAnalyzerParsingTest extends TestCase
         $this->expectException(RuntimeException::class);
 
         JobAnalyzer::parseAiResponse(json_encode($payload));
+    }
+
+    public function test_it_parses_the_english_alert_and_red_flags(): void
+    {
+        $result = JobAnalyzer::parseAiResponse(json_encode($this->validPayload([
+            'ingles_requerido' => 'Avanzado',
+            'alerta_ingles' => true,
+            'red_flags' => ['Stack no coincide con el perfil.'],
+        ])));
+
+        $this->assertSame('Avanzado', $result['ingles_requerido']);
+        $this->assertTrue($result['alerta_ingles']);
+        $this->assertSame(['Stack no coincide con el perfil.'], $result['red_flags']);
+    }
+
+    public function test_it_throws_when_alerta_ingles_is_not_a_boolean(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        JobAnalyzer::parseAiResponse(json_encode($this->validPayload(['alerta_ingles' => 'true'])));
     }
 }

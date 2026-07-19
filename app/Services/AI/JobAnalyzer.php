@@ -8,6 +8,7 @@ use App\DTOs\AiAnalysisResult;
 use App\Enums\JobStatus;
 use App\Models\AiSetting;
 use App\Models\Job;
+use App\Models\Profile;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
@@ -28,11 +29,21 @@ con exactamente este esquema:
   "idioma": "<Español|Inglés|Ambos>",
   "tipo_contrato": "<Indefinido|Prestación de servicios|Freelance|Término fijo|No especificado>",
   "salario_normalizado": "<rango y moneda legibles, ej '4.000-6.000 USD/mes', o 'No especificado'>",
-  "moneda": "<COP|USD|EUR|No especificado>"
+  "moneda": "<COP|USD|EUR|No especificado>",
+  "ingles_requerido": "<None|Básico|Intermedio|Avanzado|No especificado>",
+  "alerta_ingles": <true|false>,
+  "red_flags": ["<señal de alerta 1 basada en el desajuste con el PERFIL>", "..."]
 }
 
-Reglas: sé específico, no genérico. Si la vacante exige inglés avanzado y el perfil es B1,
-refléjalo honestamente en el score y en los tips. Normaliza salarios ambiguos con tu mejor criterio.
+Reglas: sé específico, no genérico. Normaliza salarios ambiguos con tu mejor criterio.
+Compara el inglés exigido por la vacante contra el nivel de inglés DECLARADO en la
+sección "Idiomas" del PERFIL (no asumas un nivel que no esté escrito). Si la vacante
+exige más de lo declarado, pon alerta_ingles=true y menciónalo en tips_postulacion;
+si exige igual o menos, alerta_ingles=false. red_flags debe basarse en desajustes
+concretos entre la VACANTE y el PERFIL real (stack que no coincide, seniority
+desalineado, salario ausente, descripción vaga); no inventes red flags genéricas,
+si no hay ninguna real devuelve un array vacío. Todo el análisis se basa
+EXCLUSIVAMENTE en la información del PERFIL.
 PROMPT;
 
     /**
@@ -44,12 +55,13 @@ PROMPT;
         'tipo_contrato',
         'salario_normalizado',
         'moneda',
+        'ingles_requerido',
     ];
 
     /**
      * @var array<int, string>
      */
-    private const ARRAY_KEYS = ['tips_postulacion', 'tailoring_cv'];
+    private const ARRAY_KEYS = ['tips_postulacion', 'tailoring_cv', 'red_flags'];
 
     private ?string $lastError = null;
 
@@ -57,7 +69,8 @@ PROMPT;
 
     public function analyze(Job $job): void
     {
-        $perfilMd = (string) file_get_contents(storage_path('app/perfil.md'));
+        $activeProfile = Profile::active();
+        $perfilMd = $activeProfile !== null ? $activeProfile->raw_md : (string) file_get_contents(storage_path('app/perfil.md'));
         $provider = $this->factory->make();
         $providerName = AiSetting::current()->provider;
 
@@ -130,7 +143,7 @@ PROMPT;
             throw new RuntimeException('AI response is not valid JSON.');
         }
 
-        foreach ([...self::STRING_KEYS, ...self::ARRAY_KEYS, 'match_score'] as $key) {
+        foreach ([...self::STRING_KEYS, ...self::ARRAY_KEYS, 'match_score', 'alerta_ingles'] as $key) {
             if (! array_key_exists($key, $decoded)) {
                 throw new RuntimeException("AI response is missing required key [{$key}].");
             }
@@ -152,6 +165,10 @@ PROMPT;
             if (! is_array($decoded[$key])) {
                 throw new RuntimeException("AI response key [{$key}] must be an array.");
             }
+        }
+
+        if (! is_bool($decoded['alerta_ingles'])) {
+            throw new RuntimeException('AI response key [alerta_ingles] must be a boolean.');
         }
 
         return $decoded;

@@ -27,6 +27,9 @@ class OpenRouterProviderTest extends TestCase
             'tipo_contrato' => 'Término fijo',
             'salario_normalizado' => 'No especificado',
             'moneda' => 'COP',
+            'ingles_requerido' => 'No especificado',
+            'alerta_ingles' => false,
+            'red_flags' => ['Descripción vaga.'],
         ];
 
         Http::fake([
