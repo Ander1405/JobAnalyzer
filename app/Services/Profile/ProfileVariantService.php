@@ -61,15 +61,21 @@ class ProfileVariantService
     }
 
     /**
-     * Re-parses `storage/app/perfil.md` (edited by hand) back into structure for the
-     * currently active profile, by its `##` headers. Deterministic, no AI involved.
+     * Re-parses `storage/app/perfil.md` back into structure for the currently active
+     * profile, by its `##` headers. Deterministic, no AI involved. When $content is
+     * given (the Vue raw-Markdown editor), it is written to perfil.md first — so
+     * editing either the file by hand or the textarea in the browser both work.
      */
-    public function syncActiveFromFile(): Profile
+    public function syncActiveFromFile(?string $content = null): Profile
     {
         $active = Profile::active();
 
         if ($active === null) {
             throw new RuntimeException('No active profile to sync. Import a CV first.');
+        }
+
+        if ($content !== null) {
+            file_put_contents(storage_path('app/perfil.md'), $content);
         }
 
         $markdown = (string) file_get_contents(storage_path('app/perfil.md'));

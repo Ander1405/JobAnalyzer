@@ -27,13 +27,3 @@ export type Profile = {
     raw_md: string;
     is_active: boolean;
 };
-
-export type ProfileShowResponse = {
-    content: string;
-    profile: Profile | null;
-};
-
-export type ProfileImportResponse = {
-    content: string;
-    profile: Profile;
-};
