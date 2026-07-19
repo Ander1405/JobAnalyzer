@@ -272,6 +272,12 @@ async function updateStatus(event: Event) {
                     </ul>
                 </section>
             </template>
+            <p
+                v-else-if="job.status === 'analyzing'"
+                class="mb-4 text-sm text-gray-500 dark:text-gray-400"
+            >
+                Analizando con IA…
+            </p>
             <p v-else class="mb-4 text-sm text-gray-500 dark:text-gray-400">
                 Esta vacante todavía no ha sido analizada.
             </p>

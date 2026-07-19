@@ -1,4 +1,5 @@
-export type JobStatus = 'fetched' | 'analyzed' | 'published' | 'failed';
+export type JobStatus =
+    'fetched' | 'analyzing' | 'analyzed' | 'published' | 'failed';
 
 export type ApplicationStatus =
     'Nueva' | 'CV adaptado' | 'Aplicada' | 'Entrevista' | 'Cerrada';
