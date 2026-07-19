@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ProfileVariantController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('jobs', [JobController::class, 'index'])->name('api.jobs.index');
+Route::get('jobs/sources', [JobController::class, 'sources'])->name('api.jobs.sources');
 Route::get('jobs/{job}', [JobController::class, 'show'])->name('api.jobs.show');
 Route::post('jobs/fetch', [JobController::class, 'fetch'])->name('api.jobs.fetch');
 Route::post('jobs/{job}/analyze', [JobController::class, 'analyze'])->name('api.jobs.analyze');

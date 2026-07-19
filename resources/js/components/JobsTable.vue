@@ -13,6 +13,7 @@ const filters = defineModel<JobFilters>('filters', { required: true });
 
 defineProps<{
     jobs: Job[];
+    sources: string[];
     loading: boolean;
     fetching: boolean;
     analyzing: boolean;
@@ -31,7 +32,6 @@ const statusOptions: JobStatus[] = [
     'published',
     'failed',
 ];
-const sourceOptions = ['jsearch', 'larajobs', 'infojobs'];
 
 function matchScore(job: Job): number | null {
     return job.ai_analysis?.match_score ?? null;
@@ -97,7 +97,7 @@ function statusBadgeClass(status: ApplicationStatus): string {
                     >
                         <option value="">Todas</option>
                         <option
-                            v-for="source in sourceOptions"
+                            v-for="source in sources"
                             :key="source"
                             :value="source"
                         >

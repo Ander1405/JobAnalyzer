@@ -46,7 +46,7 @@ class JSearchFetcher implements JobSourceInterface
 
         return collect($jobs)
             ->map(fn (array $job) => new JobOffer(
-                source: 'jsearch',
+                source: $this->publisher($job),
                 company: (string) ($job['employer_name'] ?? ''),
                 title: (string) ($job['job_title'] ?? ''),
                 description: (string) ($job['job_description'] ?? ''),
@@ -54,6 +54,20 @@ class JSearchFetcher implements JobSourceInterface
                 contractType: $job['job_employment_type'] ?? null,
                 salaryRaw: $this->normalizeSalary($job),
             ));
+    }
+
+    /**
+     * JSearch aggregates listings from many job boards (LinkedIn, Indeed, Glassdoor,
+     * Trabajo.org, ...); job_publisher is the real originating site, which is far more
+     * useful to show/filter by than the generic "jsearch" pipeline name.
+     *
+     * @param  array<string, mixed>  $job
+     */
+    private function publisher(array $job): string
+    {
+        $publisher = trim((string) ($job['job_publisher'] ?? ''));
+
+        return $publisher !== '' ? $publisher : 'JSearch';
     }
 
     /**

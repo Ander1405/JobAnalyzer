@@ -30,7 +30,7 @@ class JSearchFetcherTest extends TestCase
         $this->assertCount(2, $offers);
 
         $first = $offers->first();
-        $this->assertSame('jsearch', $first->source);
+        $this->assertSame('LinkedIn', $first->source);
         $this->assertSame('Acme Corp', $first->company);
         $this->assertSame('Senior PHP Developer', $first->title);
         $this->assertSame('https://example.com/jobs/123', $first->url);
@@ -38,7 +38,37 @@ class JSearchFetcherTest extends TestCase
         $this->assertSame('4K-6K a month', $first->salaryRaw);
 
         $second = $offers->last();
+        $this->assertSame('Indeed', $second->source);
         $this->assertNull($second->salaryRaw);
+    }
+
+    public function test_it_falls_back_to_a_generic_source_when_job_publisher_is_missing(): void
+    {
+        config([
+            'jobhunter.job_search_queries' => ['laravel developer'],
+            'jobhunter.job_search_country' => 'co',
+            'jobhunter.rapidapi_key' => 'test-key',
+        ]);
+
+        Http::fake([
+            'jsearch.p.rapidapi.com/*' => Http::response([
+                'status' => 'OK',
+                'data' => [
+                    'jobs' => [
+                        [
+                            'employer_name' => 'Acme Corp',
+                            'job_title' => 'Senior PHP Developer',
+                            'job_description' => 'Laravel expert needed.',
+                            'job_apply_link' => 'https://example.com/jobs/123',
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $offers = (new JSearchFetcher)->fetch();
+
+        $this->assertSame('JSearch', $offers->first()->source);
     }
 
     public function test_it_hits_the_search_v2_endpoint(): void

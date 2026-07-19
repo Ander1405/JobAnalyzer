@@ -52,6 +52,13 @@ class JobController extends Controller
         return response()->json($job);
     }
 
+    public function sources(): JsonResponse
+    {
+        return response()->json(
+            Job::query()->distinct()->orderBy('source')->pluck('source'),
+        );
+    }
+
     public function fetch(): JsonResponse
     {
         Artisan::call('jobs:fetch');
