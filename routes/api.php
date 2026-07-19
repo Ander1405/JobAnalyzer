@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AiSettingsController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ProfileVariantController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('jobs', [JobController::class, 'index'])->name('api.jobs.index');
@@ -19,3 +20,10 @@ Route::get('ai/providers/{provider}/models', [AiSettingsController::class, 'mode
 
 Route::get('profile', [ProfileController::class, 'show'])->name('api.profile.show');
 Route::post('profile/import', [ProfileController::class, 'import'])->name('api.profile.import');
+
+Route::get('profiles', [ProfileVariantController::class, 'index'])->name('api.profiles.index');
+Route::post('profiles', [ProfileVariantController::class, 'store'])->name('api.profiles.store');
+Route::get('profile/{profile}', [ProfileVariantController::class, 'show'])->name('api.profile.variant.show');
+Route::put('profile/{profile}', [ProfileVariantController::class, 'update'])->name('api.profile.variant.update');
+Route::post('profile/{profile}/sync', [ProfileVariantController::class, 'sync'])->name('api.profile.variant.sync');
+Route::post('profile/{profile}/activate', [ProfileVariantController::class, 'activate'])->name('api.profile.variant.activate');
