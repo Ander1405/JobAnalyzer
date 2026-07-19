@@ -38,6 +38,8 @@ php artisan migrate
 - **`gemini`**: get a free-tier key at [Google AI Studio](https://aistudio.google.com) and set `GEMINI_API_KEY`.
 - **`openrouter`**: get a key at [openrouter.ai](https://openrouter.ai) and set `OPENROUTER_API_KEY` + `OPENROUTER_MODEL` (use a model with a `:free` suffix to stay at $0).
 
+The `.env` values above only seed the *first* run. Provider and model can be switched live from the UI (top of the jobs page) — that selection is persisted to the database and takes effect on the next analysis, no restart needed. The model dropdown is populated from each provider's real model list (a curated static list for Claude CLI, live API lookups for Gemini/OpenRouter), with a filter box and free/pricing badges.
+
 ### 4. Configure Notion (backup destination)
 
 1. Create an integration at [notion.so/my-integrations](https://www.notion.so/my-integrations) and copy its token into `NOTION_TOKEN`.
@@ -83,6 +85,8 @@ Then open `http://127.0.0.1:8000`.
 
 The UI's "Buscar nuevas" and "Analizar pendientes" buttons, plus the per-row "Publicar en Notion" action, call the same logic through the local `/api/jobs*` endpoints.
 
+Every analysis reports how much it actually cost: the job detail drawer shows the provider/model used, elapsed time, input/output tokens, and cost in USD (or "Gratis / N/A" when a provider — Gemini today — doesn't report a cost). Running "Analizar pendientes" also shows a summary banner with the totals for the whole batch.
+
 ### Optional: daily schedule
 
 `routes/console.php` has a commented-out entry to run `jobs:run` daily at 07:00 (`America/Bogota`). Uncomment it and keep `php artisan schedule:work` running (or a system cron calling `schedule:run` every minute) if you want it to run unattended.
@@ -91,6 +95,7 @@ The UI's "Buscar nuevas" and "Analizar pendientes" buttons, plus the per-row "Pu
 
 - Job offers live in a `job_offers` table (not `jobs`), because Laravel's own queue system already owns a table named `jobs` (`QUEUE_CONNECTION=database`).
 - `status` (`fetched` → `analyzed` → `published` → `failed`) tracks the pipeline stage. `application_status` (`Nueva`, `CV adaptado`, `Aplicada`, `Entrevista`, `Cerrada`) is a separate, UI-editable field for tracking where you are in the actual application process — it's local-only and isn't synced back to Notion.
+- The currently selected AI provider/model lives in a single-row `ai_settings` table (not `.env`), since it needs to change at runtime from the UI without a restart.
 
 ## Testing
 
