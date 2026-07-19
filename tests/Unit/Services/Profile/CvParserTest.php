@@ -60,6 +60,35 @@ class CvParserTest extends TestCase
         $this->parser->parse(base_path('tests/Fixtures/sample-resume-scanned.pdf'));
     }
 
+    public function test_it_fully_strips_a_multibyte_bullet_character_without_corrupting_utf8(): void
+    {
+        // The "•" bullet is U+2022 (3 UTF-8 bytes: E2 80 A2). A byte-unsafe regex that
+        // strips only the leading byte leaves orphaned continuation bytes (80 A2) glued
+        // to the line, which later breaks json_encode() when Eloquent casts the field.
+        $path = sys_get_temp_dir().'/'.uniqid('bulleted-cv-').'.txt';
+        file_put_contents(
+            $path,
+            "Jane Doe\nBackend Developer\n\nExperiencia\n• Led the migration to microservices.\n• Reduced API latency by 40%.\n",
+        );
+
+        try {
+            $profile = $this->parser->parse($path);
+        } finally {
+            unlink($path);
+        }
+
+        $this->assertSame(
+            ['Led the migration to microservices.', 'Reduced API latency by 40%.'],
+            $profile['experience'],
+        );
+
+        foreach ($profile['experience'] as $line) {
+            $this->assertTrue(mb_check_encoding($line, 'UTF-8'), "Line [{$line}] is not valid UTF-8.");
+        }
+
+        $this->assertNotFalse(json_encode($profile['experience']));
+    }
+
     public function test_it_never_invents_content_for_missing_sections(): void
     {
         $path = sys_get_temp_dir().'/'.uniqid('minimal-cv-').'.txt';
