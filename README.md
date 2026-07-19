@@ -16,7 +16,7 @@ php artisan key:generate
 php artisan migrate
 ```
 
-`storage/app/perfil.md` already ships with a starter profile — edit it to match your own background, or replace it entirely by uploading your actual CV as a PDF from the UI (see "Uploading your CV" below). It's the single source of truth the AI uses for matching.
+`storage/app/perfil.md` already ships with a starter profile so the app works out of the box — replace it with your real background by uploading your CV from the `/profile` page (see "CV & profile" below). Whichever profile variant is active is the single source of truth the AI uses for matching.
 
 ### 2. Configure job sources
 
@@ -58,10 +58,12 @@ The `.env` values above only seed the *first* run. Provider and model can be swi
    | `Salario` | Rich text |
    | `Moneda` | Select |
    | `Idioma` | Select |
+   | `Inglés requerido` | Select |
+   | `Alerta inglés` | Checkbox |
    | `Estado` | Select — options: `Nueva`, `CV adaptado`, `Aplicada`, `Entrevista`, `Cerrada` |
    | `Fecha detectada` | Date |
 
-   New pages are always created with `Estado = Nueva`; JobHunter never updates a page after creating it, so anything beyond that is tracked manually in Notion.
+   New pages are always created with `Estado = Nueva`; JobHunter never updates a page after creating it, so anything beyond that is tracked manually in Notion. Only jobs at or above `MIN_MATCH_TO_PUBLISH` (see below) are sent to Notion at all — everything else stays local, still visible in the UI.
 
 ## Running it
 
@@ -80,16 +82,53 @@ Then open `http://127.0.0.1:8000`.
 |---|---|
 | `php artisan jobs:fetch` | Pull new offers from all enabled sources, dedupe by hash. |
 | `php artisan jobs:analyze` | Analyze all `fetched` jobs with the configured AI provider. |
-| `php artisan jobs:publish` | Publish all `analyzed` jobs to Notion. |
+| `php artisan jobs:publish` | Publish `analyzed` jobs at or above `MIN_MATCH_TO_PUBLISH` to Notion (others are skipped and reported separately). |
 | `php artisan jobs:run` | Run fetch → analyze → publish in sequence and print a summary highlighting matches at or above `MATCH_SCORE_ALERT_THRESHOLD`. |
+| `php artisan cv:import {path} [--slug=default]` | Parse a CV file (pdf/txt/md) deterministically — no AI — and store it as a profile. |
+| `php artisan profile:sync` | Re-parse a hand-edited `storage/app/perfil.md` back into the active profile's structured fields. |
 
 The UI's "Buscar nuevas" and "Analizar pendientes" buttons, plus the per-row "Publicar en Notion" action, call the same logic through the local `/api/jobs*` endpoints.
 
 Every analysis reports how much it actually cost: the job detail drawer shows the provider/model used, elapsed time, input/output tokens, and cost in USD (or "Gratis / N/A" when a provider — Gemini today — doesn't report a cost). Running "Analizar pendientes" also shows a summary banner with the totals for the whole batch.
 
-### Uploading your CV
+### CV & profile
 
-At the top of the jobs page, the "Perfil (hoja de vida)" widget lets you upload your CV as a PDF instead of hand-editing `storage/app/perfil.md`. It extracts the text, sends it through the currently configured AI provider to reformat it into the same structured Markdown, and overwrites `perfil.md` with the result — future analyses immediately use it. The raw PDF is kept at `storage/app/private/resume.pdf` for reference. Only PDF is supported; other formats are rejected with a clear error.
+Visit `/profile` (linked from the top of the jobs page) to manage your profile. Everything there is backed by a `profiles` table (slug, structured fields, and a rendered `raw_md`) — `storage/app/perfil.md` always mirrors whichever profile is currently active, since that's the file `jobs:analyze` reads.
+
+**Uploading a CV.** Upload a PDF, TXT or MD file (drag-and-drop zone at the top of `/profile`, or `php artisan cv:import path/to/cv.pdf`). **Parsing never calls the AI layer** — it's all deterministic: `smalot/pdfparser` (falling back to `pdftotext` via Symfony Process if the PDF has no clean text layer, if installed) extracts raw text, then regex/heuristics split it into sections by detecting common Spanish/English CV headers (Resumen, Experiencia, Skills, Educación, Idiomas, Certificaciones) and pull out contact info (email, phone, LinkedIn, GitHub) and the CEFR English level declared under "Idiomas" (e.g. "Inglés B2"). A scanned PDF with no extractable text returns a clear error instead of silently producing nothing — no OCR, no AI fallback. This always creates/overwrites the `default` profile.
+
+**Editing.** The `/profile` page has a form for every structured field (contact, headline, summary, experience/skills/education/certifications as editable lists, languages with an English-level dropdown) — saving regenerates the Markdown. There's also a raw-Markdown textarea with a "Sincronizar" button: it writes your edits to `storage/app/perfil.md` and re-parses them back into structure by the same `##` headers `cv:import` produces, so hand-editing the file directly (e.g. `vim storage/app/perfil.md && php artisan profile:sync`) works exactly the same way. Only the currently *active* profile can be synced this way. Expected format:
+
+```markdown
+# <headline>
+
+## Contacto
+- Nombre: ...
+- Email: ...
+
+## Resumen
+...
+
+## Experiencia
+- ...
+
+## Skills
+- ...
+
+## Educación
+- ...
+
+## Idiomas
+- Español nativo
+- Inglés B2
+
+## Certificaciones
+- ...
+```
+
+**Variants.** A variant (e.g. `backend`, `lead`) is a copy of `default` that can reorder or trim fields for a specific kind of role — it can never contain content that isn't already in the real CV, since creating one always clones from `default` first. Only one profile is active at a time (`ACTIVE_PROFILE` seeds the initial slug); switching the active variant immediately changes what `jobs:analyze` matches against.
+
+**English alert & red flags.** Every analysis now also returns `ingles_requerido` and `alerta_ingles` (true when a vacancy asks for more English than the active profile's declared level) and `red_flags` (concrete CV/vacancy mismatches, never generic filler) — shown in the job detail drawer and synced to Notion.
 
 ### Optional: daily schedule
 
@@ -100,6 +139,7 @@ At the top of the jobs page, the "Perfil (hoja de vida)" widget lets you upload 
 - Job offers live in a `job_offers` table (not `jobs`), because Laravel's own queue system already owns a table named `jobs` (`QUEUE_CONNECTION=database`).
 - `status` (`fetched` → `analyzed` → `published` → `failed`) tracks the pipeline stage. `application_status` (`Nueva`, `CV adaptado`, `Aplicada`, `Entrevista`, `Cerrada`) is a separate, UI-editable field for tracking where you are in the actual application process — it's local-only and isn't synced back to Notion.
 - The currently selected AI provider/model lives in a single-row `ai_settings` table (not `.env`), since it needs to change at runtime from the UI without a restart.
+- Profile variants live in a `profiles` table (slug, structured fields, `raw_md`, `is_active`); `storage/app/perfil.md` is always a mirror of whichever row has `is_active = true`, kept in sync by every import/edit/activate/sync action.
 
 ## Testing
 
@@ -107,4 +147,20 @@ At the top of the jobs page, the "Perfil (hoja de vida)" widget lets you upload 
 php artisan test --compact
 ```
 
-Covers RSS/JSearch source parsing, AI JSON response validation (valid, fenced, malformed), each AI provider, Notion payload chunking, the AI model catalog/settings endpoints, and CV extraction/conversion/upload.
+Covers RSS/JSearch source parsing, AI JSON response validation (valid, fenced, malformed, English alert, red flags), each AI provider, Notion payload chunking (including the match-score publish threshold), the AI model catalog/settings endpoints, and the full CV pipeline: deterministic PDF/TXT parsing (contact info, skills, declared English level), a scanned-PDF-with-no-text error path, Markdown round-tripping, profile variants (create/activate/sync), and the `/profile` API endpoints.
+
+### Manual smoke test
+
+```bash
+php artisan cv:import tests/Fixtures/sample-resume-full.pdf   # or your own CV
+php artisan tinker --execute 'dd(\App\Models\Profile::active()->only(["headline", "skills", "languages"]));'
+php artisan jobs:analyze   # any fetched job whose description asks for more English than your CV declares should come back with alerta_ingles=true
+```
+
+### Config checklist
+
+- [ ] `AI_PROVIDER` + matching credentials (`CLAUDE_CLI_BINARY`/`GEMINI_API_KEY`/`OPENROUTER_API_KEY`)
+- [ ] `RAPIDAPI_KEY` (JSearch) — optional, `INFOJOBS_ENABLED`/credentials
+- [ ] `NOTION_TOKEN` + `NOTION_DATABASE_ID`, with the properties table above created exactly
+- [ ] `MIN_MATCH_TO_PUBLISH` (default 75) and `ACTIVE_PROFILE` (default `default`)
+- [ ] A real CV imported via `/profile` or `cv:import` — the starter `perfil.md` is a placeholder
