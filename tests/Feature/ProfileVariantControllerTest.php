@@ -87,4 +87,16 @@ class ProfileVariantControllerTest extends TestCase
         $response->assertOk()->assertJsonPath('skills', ['PHP', 'Laravel', 'Docker']);
         $this->assertStringContainsString('Docker', file_get_contents($this->profilePath));
     }
+
+    public function test_it_syncs_from_edited_content_sent_by_the_browser_editor(): void
+    {
+        Profile::factory()->active()->create(['slug' => 'default']);
+
+        $response = $this->postJson('/api/profile/default/sync', [
+            'content' => "# Editado en el navegador\n\n## Skills\n- Rust\n",
+        ]);
+
+        $response->assertOk()->assertJsonPath('skills', ['Rust']);
+        $this->assertStringContainsString('Rust', file_get_contents($this->profilePath));
+    }
 }

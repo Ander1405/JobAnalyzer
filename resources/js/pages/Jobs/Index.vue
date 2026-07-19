@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { onMounted, ref, watch } from 'vue';
 import AiProviderSelector from '@/components/AiProviderSelector.vue';
 import JobDetail from '@/components/JobDetail.vue';
 import JobsTable from '@/components/JobsTable.vue';
 import type { JobFilters } from '@/components/JobsTable.vue';
-import ProfileUpload from '@/components/ProfileUpload.vue';
 import { formatCost, formatDuration } from '@/lib/utils';
 import type { Job } from '@/types/job';
 
@@ -162,9 +161,15 @@ function onUpdated(updated: Job) {
         class="min-h-screen bg-[#FDFDFC] p-6 text-[#1b1b18] lg:p-8 dark:bg-[#0a0a0a] dark:text-[#EDEDEC]"
     >
         <div class="mx-auto max-w-6xl">
-            <h1 class="mb-4 text-2xl font-semibold">JobHunter</h1>
-
-            <ProfileUpload class="mb-4" />
+            <div class="mb-4 flex items-center justify-between">
+                <h1 class="text-2xl font-semibold">JobHunter</h1>
+                <Link
+                    href="/profile"
+                    class="text-sm text-gray-500 underline hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                    Perfil →
+                </Link>
+            </div>
 
             <AiProviderSelector class="mb-6" />
 

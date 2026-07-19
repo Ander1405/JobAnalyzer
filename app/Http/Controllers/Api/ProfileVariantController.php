@@ -69,7 +69,7 @@ class ProfileVariantController extends Controller
         return response()->json($profile);
     }
 
-    public function sync(Profile $profile, ProfileVariantService $service): JsonResponse
+    public function sync(Request $request, Profile $profile, ProfileVariantService $service): JsonResponse
     {
         if (! $profile->is_active) {
             return response()->json([
@@ -77,8 +77,10 @@ class ProfileVariantController extends Controller
             ], 409);
         }
 
+        $validated = $request->validate(['content' => ['sometimes', 'string']]);
+
         try {
-            $profile = $service->syncActiveFromFile();
+            $profile = $service->syncActiveFromFile($validated['content'] ?? null);
         } catch (RuntimeException $exception) {
             return response()->json(['message' => $exception->getMessage()], 422);
         }
