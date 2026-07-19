@@ -70,4 +70,9 @@ class Profile extends Model
     {
         return static::where('is_active', true)->first();
     }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 }
