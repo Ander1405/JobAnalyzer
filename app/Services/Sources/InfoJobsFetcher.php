@@ -16,7 +16,9 @@ class InfoJobsFetcher implements JobSourceInterface
     public function fetch(): Collection
     {
         if (! config('jobhunter.infojobs.enabled')) {
-            Log::warning('InfoJobs source is disabled (INFOJOBS_ENABLED=false); skipping fetch.');
+            // Turning the source off is a decision, not an incident: at warning
+            // level it filed itself next to the real failures on every run.
+            Log::debug('InfoJobs source is disabled (INFOJOBS_ENABLED=false); skipping fetch.');
 
             return collect();
         }
@@ -49,6 +51,32 @@ class InfoJobsFetcher implements JobSourceInterface
                 url: (string) ($offer['link'] ?? ''),
                 contractType: $offer['contractType']['value'] ?? null,
                 salaryRaw: $offer['salaryDescription'] ?? null,
+                applyUrl: $this->nullableString($offer['link'] ?? null),
+                location: $this->location($offer),
+                employmentType: $this->nullableString($offer['contractType']['value'] ?? null),
+                postedAt: $this->nullableString($offer['updated'] ?? $offer['published'] ?? null),
             ));
+    }
+
+    /**
+     * @param  array<string, mixed>  $offer
+     */
+    private function location(array $offer): ?string
+    {
+        $city = trim((string) ($offer['city'] ?? ''));
+        $province = trim((string) ($offer['province']['value'] ?? ''));
+
+        return collect([$city, $province])->filter()->unique()->implode(', ') ?: null;
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 }

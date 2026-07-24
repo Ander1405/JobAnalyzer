@@ -30,6 +30,10 @@ class OpenRouterProviderTest extends TestCase
             'ingles_requerido' => 'No especificado',
             'alerta_ingles' => false,
             'red_flags' => ['Descripción vaga.'],
+            'seniority_inferido' => 'No especificado',
+            'modalidad_inferida' => 'No especificado',
+            'skills_requeridos' => [],
+            'resumen_ejecutivo' => 'Resumen de la vacante.',
         ];
 
         Http::fake([

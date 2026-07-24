@@ -15,7 +15,7 @@ class HandleInertiaRequestsTest extends TestCase
             'jobhunter.min_match_to_publish' => 75,
         ]);
 
-        $response = $this->get('/');
+        $response = $this->get('/marketplace');
 
         $response->assertInertia(fn ($page) => $page
             ->where('matchScoreAlertThreshold', 80)

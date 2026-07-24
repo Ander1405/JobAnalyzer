@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Profile;
 
 use App\Models\Profile;
+use App\Support\ProfileFile;
 
 class CvImportService
 {
@@ -23,10 +24,13 @@ class CvImportService
         $parsed = $this->parser->parse($absolutePath, $extension);
         $rawMd = $this->builder->toMarkdown($parsed);
 
-        Profile::where('slug', '!=', $slug)->where('is_active', true)->update(['is_active' => false]);
+        Profile::where('slug', '!=', $slug)
+            ->where('user_id', auth()->id())
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
 
         $profile = Profile::updateOrCreate(
-            ['slug' => $slug],
+            ['slug' => $slug, 'user_id' => auth()->id()],
             [
                 'label' => $parsed['headline'] ?? $parsed['contact']['name'] ?? ucfirst($slug),
                 'contact' => $parsed['contact'],
@@ -43,7 +47,7 @@ class CvImportService
             ],
         );
 
-        file_put_contents(storage_path('app/perfil.md'), $rawMd);
+        file_put_contents(ProfileFile::path(), $rawMd);
 
         return $profile;
     }

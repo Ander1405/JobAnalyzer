@@ -8,13 +8,17 @@ use App\Models\Job;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/**
+ * /api/jobs is the scored feed: it only returns listings that already carry an
+ * AI score. Anything still pending lives behind the marketplace endpoint.
+ */
 class JobIndexControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     public function test_it_paginates_with_a_default_page_size_of_20(): void
     {
-        Job::factory()->count(25)->create();
+        Job::factory()->analyzed()->count(25)->create();
 
         $response = $this->getJson('/api/jobs');
 
@@ -28,7 +32,7 @@ class JobIndexControllerTest extends TestCase
 
     public function test_it_respects_a_custom_per_page_and_page(): void
     {
-        Job::factory()->count(25)->create();
+        Job::factory()->analyzed()->count(25)->create();
 
         $response = $this->getJson('/api/jobs?per_page=10&page=2');
 
@@ -40,7 +44,7 @@ class JobIndexControllerTest extends TestCase
 
     public function test_it_clamps_a_page_number_beyond_the_last_page(): void
     {
-        Job::factory()->count(5)->create();
+        Job::factory()->analyzed()->count(5)->create();
 
         $response = $this->getJson('/api/jobs?per_page=20&page=99');
 
@@ -51,9 +55,9 @@ class JobIndexControllerTest extends TestCase
 
     public function test_it_still_sorts_by_match_score_descending_within_the_page(): void
     {
-        Job::factory()->create(['ai_analysis' => ['match_score' => 40]]);
-        Job::factory()->create(['ai_analysis' => ['match_score' => 90]]);
-        Job::factory()->create(['ai_analysis' => ['match_score' => 60]]);
+        $this->analyzedWithScore(40);
+        $this->analyzedWithScore(90);
+        $this->analyzedWithScore(60);
 
         $response = $this->getJson('/api/jobs');
 
@@ -61,16 +65,24 @@ class JobIndexControllerTest extends TestCase
         $this->assertSame([90, 60, 40], $scores->all());
     }
 
-    public function test_min_match_filter_never_hides_jobs_that_have_not_been_analyzed_yet(): void
+    public function test_min_match_filter_drops_jobs_below_the_threshold(): void
     {
-        Job::factory()->create(['ai_analysis' => null]);
-        Job::factory()->create(['ai_analysis' => ['match_score' => 40]]);
-        Job::factory()->create(['ai_analysis' => ['match_score' => 90]]);
+        Job::factory()->create(['ai_analysis' => null]); // never analyzed
+        $this->analyzedWithScore(40);
+        $this->analyzedWithScore(90);
 
         $response = $this->getJson('/api/jobs?min_match=75');
 
-        $response->assertJsonCount(2, 'data');
-        $scores = collect($response->json('data'))->pluck('ai_analysis.match_score');
-        $this->assertSame([90, null], $scores->all());
+        $response->assertJsonCount(1, 'data');
+        $this->assertSame([90], collect($response->json('data'))->pluck('ai_analysis.match_score')->all());
+    }
+
+    private function analyzedWithScore(int $score): Job
+    {
+        $job = Job::factory()->analyzed()->create();
+
+        $job->update(['ai_analysis' => array_merge($job->ai_analysis, ['match_score' => $score])]);
+
+        return $job;
     }
 }

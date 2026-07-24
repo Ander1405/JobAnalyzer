@@ -32,3 +32,35 @@ export function formatCost(cost: number | null): string {
 
     return `$${cost.toFixed(6)}`;
 }
+
+export function formatRelativeTime(dateString: string | null): string {
+    if (!dateString) {
+        return '';
+    }
+
+    const diffDays = Math.floor(
+        (Date.now() - new Date(dateString).getTime()) / 86_400_000,
+    );
+
+    if (diffDays <= 0) {
+        return 'hoy';
+    }
+
+    if (diffDays === 1) {
+        return 'hace 1 día';
+    }
+
+    if (diffDays < 30) {
+        return `hace ${diffDays} días`;
+    }
+
+    if (diffDays < 365) {
+        const months = Math.floor(diffDays / 30);
+
+        return `hace ${months} mes${months === 1 ? '' : 'es'}`;
+    }
+
+    const years = Math.floor(diffDays / 365);
+
+    return `hace ${years} año${years === 1 ? '' : 's'}`;
+}

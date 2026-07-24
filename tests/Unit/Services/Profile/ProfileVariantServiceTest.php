@@ -18,7 +18,7 @@ class ProfileVariantServiceTest extends TestCase
 
     private string $profilePath;
 
-    private string $originalProfile;
+    private ?string $originalProfile;
 
     private ProfileVariantService $service;
 
@@ -26,14 +26,18 @@ class ProfileVariantServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->profilePath = storage_path('app/perfil.md');
-        $this->originalProfile = file_get_contents($this->profilePath);
+        $this->profilePath = storage_path("app/perfil_{$this->actingUser->id}.md");
+        $this->originalProfile = file_exists($this->profilePath) ? file_get_contents($this->profilePath) : null;
         $this->service = new ProfileVariantService(new ProfileBuilder(new EnglishLevelDetector));
     }
 
     protected function tearDown(): void
     {
-        file_put_contents($this->profilePath, $this->originalProfile);
+        if ($this->originalProfile === null) {
+            @unlink($this->profilePath);
+        } else {
+            file_put_contents($this->profilePath, $this->originalProfile);
+        }
 
         parent::tearDown();
     }

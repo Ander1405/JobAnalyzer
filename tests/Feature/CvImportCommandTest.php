@@ -14,27 +14,33 @@ class CvImportCommandTest extends TestCase
 
     private string $profilePath;
 
-    private string $originalProfile;
+    private ?string $originalProfile;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->profilePath = storage_path('app/perfil.md');
-        $this->originalProfile = file_get_contents($this->profilePath);
+        $this->profilePath = storage_path("app/perfil_{$this->actingUser->id}.md");
+        $this->originalProfile = file_exists($this->profilePath) ? file_get_contents($this->profilePath) : null;
     }
 
     protected function tearDown(): void
     {
-        file_put_contents($this->profilePath, $this->originalProfile);
+        if ($this->originalProfile === null) {
+            @unlink($this->profilePath);
+        } else {
+            file_put_contents($this->profilePath, $this->originalProfile);
+        }
 
         parent::tearDown();
     }
 
     public function test_it_imports_a_cv_file_into_the_default_profile(): void
     {
-        $this->artisan('cv:import', ['path' => base_path('tests/Fixtures/sample-resume.txt')])
-            ->assertSuccessful();
+        $this->artisan('cv:import', [
+            'path' => base_path('tests/Fixtures/sample-resume.txt'),
+            '--user' => $this->actingUser->email,
+        ])->assertSuccessful();
 
         $profile = Profile::where('slug', 'default')->first();
 
@@ -49,6 +55,7 @@ class CvImportCommandTest extends TestCase
         $this->artisan('cv:import', [
             'path' => base_path('tests/Fixtures/sample-resume.txt'),
             '--slug' => 'backend',
+            '--user' => $this->actingUser->email,
         ])->assertSuccessful();
 
         $this->assertDatabaseHas('profiles', ['slug' => 'backend', 'is_active' => true]);
@@ -56,7 +63,7 @@ class CvImportCommandTest extends TestCase
 
     public function test_it_fails_gracefully_for_a_missing_file(): void
     {
-        $this->artisan('cv:import', ['path' => '/nonexistent/cv.pdf'])
+        $this->artisan('cv:import', ['path' => '/nonexistent/cv.pdf', '--user' => $this->actingUser->email])
             ->assertFailed();
     }
 }

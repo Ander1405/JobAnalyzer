@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\RequiresUserContext;
 use App\Enums\JobStatus;
 use App\Models\Job;
 use App\Services\Notion\NotionPublisher;
@@ -11,13 +12,21 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
-#[Signature('jobs:publish')]
+#[Signature('jobs:publish {--user= : Email of the user whose analyzed offers to publish}')]
 #[Description('Publish analyzed job offers at or above MIN_MATCH_TO_PUBLISH to Notion as a searchable backup.')]
 class JobsPublish extends Command
 {
+    use RequiresUserContext;
+
     public function handle(NotionPublisher $publisher): int
     {
-        $jobs = Job::where('status', JobStatus::Analyzed)->get();
+        $user = $this->resolveUserOption();
+
+        if ($user === null) {
+            return self::FAILURE;
+        }
+
+        $jobs = Job::where('status', JobStatus::Analyzed)->where('user_id', $user->id)->get();
 
         $published = 0;
         $failed = 0;

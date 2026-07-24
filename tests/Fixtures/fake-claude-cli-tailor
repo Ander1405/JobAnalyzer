@@ -1,0 +1,17 @@
+#!/usr/bin/env php
+<?php
+
+$tailored = [
+    'headline' => 'Desarrollador backend Laravel orientado a APIs',
+    'summary' => 'Desarrollador backend con foco en Laravel y APIs REST para equipos remotos.',
+    'experience' => ['Lideró la migración de una API monolítica a microservicios con Laravel.'],
+    'skills' => ['Laravel', 'PHP', 'Docker'],
+];
+
+fwrite(STDOUT, json_encode([
+    'result' => json_encode($tailored),
+    'duration_ms' => 1200,
+    'total_cost_usd' => 0.0089,
+    'usage' => ['input_tokens' => 180, 'output_tokens' => 120],
+]));
+exit(0);

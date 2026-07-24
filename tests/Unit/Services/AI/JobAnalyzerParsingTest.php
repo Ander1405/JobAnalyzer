@@ -24,6 +24,10 @@ class JobAnalyzerParsingTest extends TestCase
             'ingles_requerido' => 'No especificado',
             'alerta_ingles' => false,
             'red_flags' => [],
+            'seniority_inferido' => 'No especificado',
+            'modalidad_inferida' => 'No especificado',
+            'skills_requeridos' => [],
+            'resumen_ejecutivo' => 'Vacante de desarrollo backend con Laravel.',
         ], $overrides);
     }
 
@@ -86,5 +90,30 @@ class JobAnalyzerParsingTest extends TestCase
         $this->expectException(RuntimeException::class);
 
         JobAnalyzer::parseAiResponse(json_encode($this->validPayload(['alerta_ingles' => 'true'])));
+    }
+
+    public function test_it_parses_the_inferred_metadata_fields(): void
+    {
+        $result = JobAnalyzer::parseAiResponse(json_encode($this->validPayload([
+            'seniority_inferido' => 'Senior',
+            'modalidad_inferida' => 'Remoto',
+            'skills_requeridos' => ['Laravel', 'Vue'],
+            'resumen_ejecutivo' => 'Rol senior full stack remoto.',
+        ])));
+
+        $this->assertSame('Senior', $result['seniority_inferido']);
+        $this->assertSame('Remoto', $result['modalidad_inferida']);
+        $this->assertSame(['Laravel', 'Vue'], $result['skills_requeridos']);
+        $this->assertSame('Rol senior full stack remoto.', $result['resumen_ejecutivo']);
+    }
+
+    public function test_it_throws_when_skills_requeridos_is_missing(): void
+    {
+        $payload = $this->validPayload();
+        unset($payload['skills_requeridos']);
+
+        $this->expectException(RuntimeException::class);
+
+        JobAnalyzer::parseAiResponse(json_encode($payload));
     }
 }

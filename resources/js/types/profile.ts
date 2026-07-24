@@ -60,3 +60,30 @@ export type ProfileReviewUsage = {
     outputTokens: number | null;
     costUsd: number | null;
 };
+
+export type TailorOverrides = {
+    headline: string;
+    summary: string;
+    experience: string[];
+    skills: string[];
+};
+
+export type TailorPreview = {
+    job_id: number;
+    overrides: TailorOverrides;
+    before_markdown: string;
+    after_markdown: string;
+    usage: ProfileReviewUsage;
+    model: string;
+};
+
+export type AtsAnalysis = {
+    ats_score: number;
+    problemas: string[];
+    keywords_faltantes: string[];
+    recomendaciones_formato: string[];
+    before_markdown: string;
+    after_markdown: string;
+    usage: ProfileReviewUsage;
+    model: string;
+};

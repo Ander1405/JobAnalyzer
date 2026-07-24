@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Profile;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,6 +25,7 @@ class ProfileFactory extends Factory
         $name = fake()->name();
 
         return [
+            'user_id' => fn () => auth()->id() ?? User::factory(),
             'slug' => fake()->unique()->slug(2),
             'label' => $name,
             'contact' => ['name' => $name, 'email' => fake()->email()],

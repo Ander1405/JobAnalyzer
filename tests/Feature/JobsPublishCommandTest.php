@@ -27,7 +27,7 @@ class JobsPublishCommandTest extends TestCase
         $eligible = Job::factory()->analyzed()->create(['ai_analysis' => ['match_score' => 80]]);
         $ineligible = Job::factory()->analyzed()->create(['ai_analysis' => ['match_score' => 60]]);
 
-        $this->artisan('jobs:publish')->assertSuccessful();
+        $this->artisan('jobs:publish', ['--user' => $this->actingUser->email])->assertSuccessful();
 
         $this->assertSame(JobStatus::Published, $eligible->fresh()->status);
         $this->assertSame(JobStatus::Analyzed, $ineligible->fresh()->status);

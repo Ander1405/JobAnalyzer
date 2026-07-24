@@ -36,10 +36,54 @@ class JSearchFetcherTest extends TestCase
         $this->assertSame('https://example.com/jobs/123', $first->url);
         $this->assertSame('FULLTIME', $first->contractType);
         $this->assertSame('4K-6K a month', $first->salaryRaw);
+        $this->assertSame('https://example.com/jobs/123', $first->applyUrl);
+        $this->assertSame('Bogotá, CO', $first->location);
+        $this->assertTrue($first->isRemote);
+        $this->assertSame('Remoto', $first->workMode);
+        $this->assertSame('FULLTIME', $first->employmentType);
+        $this->assertSame('2026-07-10T12:00:00.000Z', $first->postedAt);
+        $this->assertSame('2026-08-10T12:00:00.000Z', $first->expiresAt);
+        $this->assertSame('https://example.com/logo.png', $first->companyLogo);
+        $this->assertSame('https://acme.example.com', $first->companyWebsite);
+        $this->assertSame(['Remote work', 'Health insurance'], $first->benefits);
+        $this->assertSame(['PHP', 'Laravel', 'MySQL'], $first->requiredSkills);
 
         $second = $offers->last();
         $this->assertSame('Indeed', $second->source);
         $this->assertNull($second->salaryRaw);
+        $this->assertNull($second->location);
+        $this->assertNull($second->isRemote);
+        $this->assertNull($second->benefits);
+        $this->assertNull($second->requiredSkills);
+    }
+
+    public function test_it_falls_back_apply_url_mapping_when_job_apply_link_is_missing(): void
+    {
+        config([
+            'jobhunter.job_search_queries' => ['laravel developer'],
+            'jobhunter.job_search_country' => 'co',
+            'jobhunter.rapidapi_key' => 'test-key',
+        ]);
+
+        Http::fake([
+            'jsearch.p.rapidapi.com/*' => Http::response([
+                'status' => 'OK',
+                'data' => [
+                    'jobs' => [
+                        [
+                            'employer_name' => 'Acme Corp',
+                            'job_title' => 'Senior PHP Developer',
+                            'job_description' => 'Laravel expert needed.',
+                            'job_apply_link' => '',
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $offers = (new JSearchFetcher)->fetch();
+
+        $this->assertNull($offers->first()->applyUrl);
     }
 
     public function test_it_falls_back_to_a_generic_source_when_job_publisher_is_missing(): void

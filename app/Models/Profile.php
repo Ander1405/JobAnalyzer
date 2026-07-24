@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToUser;
 use Database\Factories\ProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
+ * @property int $user_id
  * @property string $slug
  * @property string $label
+ * @property int|null $job_id
  * @property array<string, mixed>|null $contact
  * @property string|null $headline
  * @property string|null $summary
@@ -31,8 +35,10 @@ use Illuminate\Support\Carbon;
  */
 #[Table('profiles')]
 #[Fillable([
+    'user_id',
     'slug',
     'label',
+    'job_id',
     'contact',
     'headline',
     'summary',
@@ -48,7 +54,7 @@ use Illuminate\Support\Carbon;
 class Profile extends Model
 {
     /** @use HasFactory<ProfileFactory> */
-    use HasFactory;
+    use BelongsToUser, HasFactory;
 
     /**
      * Get the attributes that should be cast.
@@ -68,13 +74,28 @@ class Profile extends Model
         ];
     }
 
+    /**
+     * "Active" is inherently per-user — filtered explicitly here (not just via the
+     * BelongsToUser scope) so it still means "my active profile" for an admin, who
+     * would otherwise see the first active profile across every account.
+     */
     public static function active(): ?self
     {
-        return static::where('is_active', true)->first();
+        return static::where('is_active', true)
+            ->when(auth()->check(), fn ($query) => $query->where('user_id', auth()->id()))
+            ->first();
     }
 
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * @return BelongsTo<Job, $this>
+     */
+    public function job(): BelongsTo
+    {
+        return $this->belongsTo(Job::class);
     }
 }

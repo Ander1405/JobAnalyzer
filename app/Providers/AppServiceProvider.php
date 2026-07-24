@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\TrackedJob;
+use App\Observers\TrackedJobObserver;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureAnalysisWorkers();
+
+        TrackedJob::observe(TrackedJobObserver::class);
     }
 
     /**
@@ -46,5 +52,25 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    /**
+     * `composer dev` only starts one `queue:listen` process, so AnalyzeJobListing
+     * jobs (queue "analysis") ran one at a time no matter how many were pending —
+     * the AI call, not the queue, was the bottleneck per job, so more workers
+     * means more analyses in flight at once. `queue:listen` reloads code on every
+     * job (slow) and can't target a specific queue count like this; `queue:work`
+     * processes are what actually run in parallel here.
+     */
+    protected function configureAnalysisWorkers(): void
+    {
+        $workers = (int) config('jobhunter.analysis_workers');
+
+        for ($i = 1; $i <= $workers; $i++) {
+            DevCommands::artisan(
+                'queue:work --queue=analysis --tries=1 --timeout=0',
+                "analysis-{$i}",
+            );
+        }
     }
 }

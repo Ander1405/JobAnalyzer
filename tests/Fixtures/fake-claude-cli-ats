@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php
+
+$ats = [
+    'ats_score' => 72,
+    'problemas' => ['Falta cuantificar logros en la experiencia más reciente.'],
+    'keywords_faltantes' => ['CI/CD', 'AWS'],
+    'recomendaciones_formato' => ['Usa encabezados estándar como "Experiencia" y "Educación".'],
+    'version_optimizada_md' => "# Jane Doe\n\n## Contacto\n- Email: jane@example.com\n\n## Resumen\nDesarrolladora backend con experiencia en Laravel.\n\n## Experiencia\n- Backend developer en Acme Corp.\n\n## Skills\n- Laravel\n- PHP\n\n## Educación\n- No especificado\n\n## Idiomas\n- No especificado\n\n## Certificaciones\n- No especificado\n",
+];
+
+fwrite(STDOUT, json_encode([
+    'result' => json_encode($ats),
+    'duration_ms' => 1800,
+    'total_cost_usd' => 0.0145,
+    'usage' => ['input_tokens' => 260, 'output_tokens' => 210],
+]));
+exit(0);

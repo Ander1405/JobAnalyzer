@@ -4,18 +4,25 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\RequiresUserContext;
 use App\Services\Profile\CvImportService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use RuntimeException;
 
-#[Signature('cv:import {path : Absolute or relative path to the CV file (pdf, txt or md)} {--slug=default : Profile slug to create or overwrite}')]
+#[Signature('cv:import {path : Absolute or relative path to the CV file (pdf, txt or md)} {--slug=default : Profile slug to create or overwrite} {--user= : Email of the user this CV belongs to}')]
 #[Description('Import a CV file, parse it deterministically (no AI), and store it as a profile.')]
 class CvImport extends Command
 {
+    use RequiresUserContext;
+
     public function handle(CvImportService $service): int
     {
+        if ($this->resolveUserOption() === null) {
+            return self::FAILURE;
+        }
+
         $path = (string) $this->argument('path');
         $slug = (string) $this->option('slug');
 

@@ -14,19 +14,23 @@ class ProfileSyncCommandTest extends TestCase
 
     private string $profilePath;
 
-    private string $originalProfile;
+    private ?string $originalProfile;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->profilePath = storage_path('app/perfil.md');
-        $this->originalProfile = file_get_contents($this->profilePath);
+        $this->profilePath = storage_path("app/perfil_{$this->actingUser->id}.md");
+        $this->originalProfile = file_exists($this->profilePath) ? file_get_contents($this->profilePath) : null;
     }
 
     protected function tearDown(): void
     {
-        file_put_contents($this->profilePath, $this->originalProfile);
+        if ($this->originalProfile === null) {
+            @unlink($this->profilePath);
+        } else {
+            file_put_contents($this->profilePath, $this->originalProfile);
+        }
 
         parent::tearDown();
     }
@@ -37,7 +41,7 @@ class ProfileSyncCommandTest extends TestCase
 
         file_put_contents($this->profilePath, "# Manually edited\n\n## Skills\n- Go\n- Kubernetes\n");
 
-        $this->artisan('profile:sync')->assertSuccessful();
+        $this->artisan('profile:sync', ['--user' => $this->actingUser->email])->assertSuccessful();
 
         $profile = Profile::where('slug', 'default')->first();
         $this->assertSame(['Go', 'Kubernetes'], $profile->skills);
@@ -45,6 +49,6 @@ class ProfileSyncCommandTest extends TestCase
 
     public function test_it_fails_gracefully_without_an_active_profile(): void
     {
-        $this->artisan('profile:sync')->assertFailed();
+        $this->artisan('profile:sync', ['--user' => $this->actingUser->email])->assertFailed();
     }
 }

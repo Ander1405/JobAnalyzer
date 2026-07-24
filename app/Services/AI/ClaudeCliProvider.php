@@ -32,20 +32,24 @@ class ClaudeCliProvider implements AIProvider
         $binary = (string) config('jobhunter.claude_cli.binary');
         $model = $this->model ?? config('jobhunter.claude_cli.model');
 
-        $command = [$binary, '-p', '--output-format', 'json'];
+        $prompt = $systemPrompt."\n\n".$userPrompt;
+        $command = [$binary, '-p'];
 
         if (! empty($model)) {
             $command[] = '--model';
             $command[] = (string) $model;
         }
 
-        $process = new Process($command);
-        $process->setInput($systemPrompt."\n\n".$userPrompt);
-        $process->setTimeout(120);
+        $command[] = '--output-format';
+        $command[] = 'json';
+        $command[] = $prompt;
 
-        if ($home = $this->resolveHome()) {
-            $process->setEnv(['HOME' => $home]);
-        }
+        // A model call outlives PHP-FPM's 30s max_execution_time, and the fatal it
+        // raises kills the request mid-write instead of failing the analysis.
+        set_time_limit(0);
+
+        $process = new Process($command, env: $this->environment());
+        $process->setTimeout(120);
 
         $startedAt = microtime(true);
 
@@ -58,16 +62,15 @@ class ClaudeCliProvider implements AIProvider
             );
         }
 
-        if (! $process->isSuccessful()) {
-            throw new RuntimeException(
-                "Claude CLI exited with code {$process->getExitCode()}. Verify you are logged in (run `claude` in your terminal). ".
-                "Stdout: {$process->getOutput()} Stderr: {$process->getErrorOutput()}"
-            );
+        $decoded = json_decode($process->getOutput(), true);
+        $decoded = is_array($decoded) ? $decoded : [];
+        $cliMessage = is_string($decoded['result'] ?? null) ? $decoded['result'] : '';
+
+        if (! $process->isSuccessful() || ($decoded['is_error'] ?? false) === true) {
+            throw new RuntimeException($this->failureMessage($process->getExitCode(), $cliMessage, $process->getErrorOutput()));
         }
 
-        $decoded = json_decode($process->getOutput(), true);
-
-        if (! is_array($decoded) || ! isset($decoded['result']) || ! is_string($decoded['result'])) {
+        if ($cliMessage === '') {
             throw new RuntimeException('Unexpected Claude CLI output format: missing "result" field.');
         }
 
@@ -78,7 +81,67 @@ class ClaudeCliProvider implements AIProvider
             costUsd: isset($decoded['total_cost_usd']) ? (float) $decoded['total_cost_usd'] : null,
         );
 
-        return new AiCompletionResult($decoded['result'], $usage, (string) ($model ?: 'default'));
+        return new AiCompletionResult($cliMessage, $usage, (string) ($model ?: 'default'));
+    }
+
+    /**
+     * The CLI only inherits what we hand it. HOME points it at ~/.claude, and the
+     * token (when configured) is the only credential that survives outside the
+     * user's GUI session — see the note in config/jobhunter.php.
+     *
+     * @return array<string, string>
+     */
+    private function environment(): array
+    {
+        $env = [];
+
+        if ($home = $this->resolveHome()) {
+            $env['HOME'] = $home;
+        }
+
+        $path = getenv('PATH');
+        $env['PATH'] = is_string($path) && $path !== ''
+            ? $path
+            : '/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin';
+
+        if ($token = config('jobhunter.claude_cli.oauth_token')) {
+            $env['CLAUDE_CODE_OAUTH_TOKEN'] = (string) $token;
+        }
+
+        if ($apiKey = config('jobhunter.claude_cli.api_key')) {
+            $env['ANTHROPIC_API_KEY'] = (string) $apiKey;
+        }
+
+        $maxThinkingTokens = config('jobhunter.claude_cli.max_thinking_tokens');
+
+        if ($maxThinkingTokens !== null) {
+            $env['MAX_THINKING_TOKENS'] = (string) $maxThinkingTokens;
+        }
+
+        return $env;
+    }
+
+    /**
+     * The raw CLI payload is a wall of JSON that buries the one line that matters,
+     * so surface that line — and turn the auth failure into the actual remedy,
+     * because "run `claude` in your terminal" does not fix a PHP-FPM request.
+     */
+    private function failureMessage(?int $exitCode, string $cliMessage, string $stderr): string
+    {
+        $detail = $cliMessage !== '' ? $cliMessage : trim($stderr);
+
+        if (str_contains(strtolower($detail), 'not logged in') || str_contains($detail, '/login')) {
+            return 'The Claude CLI has no usable session in this process. '
+                .'On macOS the CLI session lives in the login Keychain, which PHP-FPM cannot read. '
+                .'Run `claude setup-token` in your terminal and put the token in .env as CLAUDE_CODE_OAUTH_TOKEN '
+                .'(then `php artisan config:clear`), or switch the AI provider to gemini/openrouter.';
+        }
+
+        return sprintf(
+            'Claude CLI failed (exit code %s): %s',
+            $exitCode ?? 'unknown',
+            $detail !== '' ? $detail : 'no output',
+        );
     }
 
     /**

@@ -2,5 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Jobs/Index')->name('home');
-Route::inertia('/profile', 'Profile/Index')->name('profile');
+Route::middleware('auth')->group(function () {
+    Route::redirect('/', '/marketplace');
+
+    Route::inertia('/{any}', 'App/Shell')
+        ->where('any', '^(marketplace|tracking|profile)(/.*)?$')
+        ->name('app.shell');
+});
+
+require __DIR__.'/auth.php';

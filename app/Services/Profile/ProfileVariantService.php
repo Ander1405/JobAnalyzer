@@ -5,11 +5,30 @@ declare(strict_types=1);
 namespace App\Services\Profile;
 
 use App\Models\Profile;
+use App\Support\ProfileFile;
 use RuntimeException;
 
 class ProfileVariantService
 {
     public function __construct(private readonly ProfileBuilder $builder) {}
+
+    /**
+     * Appends an incrementing numeric suffix until the slug is free, so callers that
+     * derive a slug from user-facing text (job title/company, "ats-optimizado") never
+     * have to surface a uniqueness validation error for a routine repeat action.
+     */
+    public function uniqueSlug(string $base): string
+    {
+        $slug = $base;
+        $suffix = 2;
+
+        while (Profile::where('slug', $slug)->where('user_id', auth()->id())->exists()) {
+            $slug = "{$base}-{$suffix}";
+            $suffix++;
+        }
+
+        return $slug;
+    }
 
     /**
      * Creates a new profile variant from the real content of `default`. Only fields
@@ -18,9 +37,9 @@ class ProfileVariantService
      *
      * @param  array<string, mixed>  $overrides
      */
-    public function createVariant(string $slug, string $label, array $overrides = []): Profile
+    public function createVariant(string $slug, string $label, array $overrides = [], ?int $jobId = null): Profile
     {
-        $default = Profile::where('slug', 'default')->first();
+        $default = Profile::where('slug', 'default')->where('user_id', auth()->id())->first();
 
         if ($default === null) {
             throw new RuntimeException('Import a CV into the "default" profile before creating variants.');
@@ -40,6 +59,7 @@ class ProfileVariantService
         return Profile::create([
             'slug' => $slug,
             'label' => $label,
+            'job_id' => $jobId,
             ...$data,
             'raw_md' => $this->builder->toMarkdown($data),
             'source_text' => $default->source_text,
@@ -53,10 +73,13 @@ class ProfileVariantService
      */
     public function activate(Profile $profile): Profile
     {
-        Profile::where('id', '!=', $profile->id)->where('is_active', true)->update(['is_active' => false]);
+        Profile::where('id', '!=', $profile->id)
+            ->where('user_id', $profile->user_id)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
         $profile->update(['is_active' => true]);
 
-        file_put_contents(storage_path('app/perfil.md'), $profile->raw_md);
+        file_put_contents(ProfileFile::path(), $profile->raw_md);
 
         return $profile->fresh();
     }
@@ -76,10 +99,10 @@ class ProfileVariantService
         }
 
         if ($content !== null) {
-            file_put_contents(storage_path('app/perfil.md'), $content);
+            file_put_contents(ProfileFile::path(), $content);
         }
 
-        $markdown = (string) file_get_contents(storage_path('app/perfil.md'));
+        $markdown = (string) file_get_contents(ProfileFile::path());
         $structured = $this->builder->fromMarkdown($markdown);
 
         $active->update([
@@ -117,7 +140,7 @@ class ProfileVariantService
         $profile->update(['raw_md' => $rawMd]);
 
         if ($profile->is_active) {
-            file_put_contents(storage_path('app/perfil.md'), $rawMd);
+            file_put_contents(ProfileFile::path(), $rawMd);
         }
 
         return $profile->fresh();

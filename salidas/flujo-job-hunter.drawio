@@ -1,0 +1,73 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Flujo Job Hunter">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Job Hunter — Flujo de punta a punta (Laravel + Inertia/Vue)" style="text;html=1;fontSize=16;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="700" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Bandas / rótulos de etapa -->
+        <mxCell id="lb1" value="1 · Ingesta de vacantes" style="text;html=1;fontSize=11;fontStyle=1;fontColor=#6c8ebf;align=left;" vertex="1" parent="1"><mxGeometry x="40" y="70" width="260" height="20" as="geometry" /></mxCell>
+        <mxCell id="lb2" value="2 · Análisis con IA (multi-proveedor)" style="text;html=1;fontSize=11;fontStyle=1;fontColor=#9673a6;align=left;" vertex="1" parent="1"><mxGeometry x="560" y="70" width="320" height="20" as="geometry" /></mxCell>
+        <mxCell id="lb3" value="3 · Marketplace, seguimiento y publicación" style="text;html=1;fontSize=11;fontStyle=1;fontColor=#d79b00;align=left;" vertex="1" parent="1"><mxGeometry x="1000" y="70" width="320" height="20" as="geometry" /></mxCell>
+        <mxCell id="lb4" value="4 · Perfil / CV del candidato" style="text;html=1;fontSize=11;fontStyle=1;fontColor=#82b366;align=left;" vertex="1" parent="1"><mxGeometry x="40" y="470" width="320" height="20" as="geometry" /></mxCell>
+
+        <!-- Actor -->
+        <mxCell id="user" value="Usuario&#10;(Inertia/Vue)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1"><mxGeometry x="40" y="230" width="120" height="50" as="geometry" /></mxCell>
+
+        <!-- Fuentes externas -->
+        <mxCell id="sources" value="Fuentes externas&#10;InfoJobs · JSearch · LaraJobs RSS&#10;(JobSourceInterface)" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="200" y="100" width="200" height="70" as="geometry" /></mxCell>
+
+        <!-- Ingesta -->
+        <mxCell id="fetch" value="POST /jobs/fetch&#10;JobController@fetch&#10;→ Fetchers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="210" y="230" width="180" height="60" as="geometry" /></mxCell>
+        <mxCell id="job" value="Job&#10;(Model)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1"><mxGeometry x="440" y="235" width="90" height="50" as="geometry" /></mxCell>
+
+        <!-- Análisis IA -->
+        <mxCell id="analyze" value="POST /jobs/{job}/analyze&#10;JobAnalyzer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="580" y="230" width="190" height="60" as="geometry" /></mxCell>
+        <mxCell id="factory" value="AIProviderFactory" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="590" y="330" width="170" height="40" as="geometry" /></mxCell>
+        <mxCell id="providers" value="Proveedores IA&#10;Gemini · OpenRouter · Claude CLI&#10;(AIProvider)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="580" y="400" width="190" height="70" as="geometry" /></mxCell>
+        <mxCell id="settings" value="AiSetting +&#10;AiModelCatalog&#10;(GET/PUT /ai/settings)" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="810" y="330" width="170" height="60" as="geometry" /></mxCell>
+        <mxCell id="scored" value="Job analizado&#10;score + JobStatus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1"><mxGeometry x="820" y="235" width="150" height="50" as="geometry" /></mxCell>
+
+        <!-- Seguimiento y publicación -->
+        <mxCell id="marketplace" value="GET /marketplace&#10;analyze-pending · track-bulk&#10;(MarketplaceController)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="1030" y="120" width="200" height="60" as="geometry" /></mxCell>
+        <mxCell id="track" value="POST /marketplace/{job}/track&#10;→ TrackedJob (Model)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="1030" y="210" width="220" height="50" as="geometry" /></mxCell>
+        <mxCell id="tracking" value="Seguimiento&#10;TrackingController&#10;estado + TrackedJobComment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="1030" y="290" width="220" height="70" as="geometry" /></mxCell>
+        <mxCell id="publish" value="POST /jobs/{job}/publish&#10;NotionPublisher → Notion" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1"><mxGeometry x="1030" y="390" width="220" height="55" as="geometry" /></mxCell>
+
+        <!-- Perfil / CV -->
+        <mxCell id="import" value="POST /profile/import&#10;CvImportService" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="40" y="510" width="170" height="50" as="geometry" /></mxCell>
+        <mxCell id="parse" value="ResumeTextExtractor →&#10;CvParser → ProfileBuilder&#10;(+ EnglishLevelDetector)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="240" y="505" width="230" height="60" as="geometry" /></mxCell>
+        <mxCell id="profile" value="Profile&#10;(Model activo)&#10;+ variantes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="500" y="505" width="130" height="60" as="geometry" /></mxCell>
+        <mxCell id="review" value="ProfileReviewer&#10;POST /profile/{p}/review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="670" y="475" width="180" height="45" as="geometry" /></mxCell>
+        <mxCell id="tailor" value="CvTailorer&#10;POST /profile/tailor (+confirm)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="670" y="530" width="180" height="45" as="geometry" /></mxCell>
+        <mxCell id="ats" value="CvAtsOptimizer&#10;POST /profile/ats (+confirm)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1"><mxGeometry x="670" y="585" width="180" height="45" as="geometry" /></mxCell>
+
+        <!-- Aristas: flujo principal -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="user" target="fetch"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;" edge="1" parent="1" source="sources" target="fetch"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="fetch" target="job"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="job" target="analyze"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="analyze" target="factory"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="factory" target="providers"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" value="config" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;" edge="1" parent="1" source="settings" target="factory"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="analyze" target="scored"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="scored" target="marketplace"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="marketplace" target="track"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="track" target="tracking"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="scored" target="publish"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- Aristas: perfil -->
+        <mxCell id="p1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="import" target="parse"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="parse" target="profile"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="profile" target="review"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="profile" target="tailor"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="1" source="profile" target="ats"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="p6" value="a la medida de la vacante" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;fontColor=#9673a6;" edge="1" parent="1" source="scored" target="tailor"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

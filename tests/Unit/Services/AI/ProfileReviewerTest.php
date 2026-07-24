@@ -20,7 +20,7 @@ class ProfileReviewerTest extends TestCase
 
     private string $profilePath;
 
-    private string $originalProfile;
+    private ?string $originalProfile;
 
     private ProfileReviewer $reviewer;
 
@@ -28,8 +28,8 @@ class ProfileReviewerTest extends TestCase
     {
         parent::setUp();
 
-        $this->profilePath = storage_path('app/perfil.md');
-        $this->originalProfile = file_get_contents($this->profilePath);
+        $this->profilePath = storage_path("app/perfil_{$this->actingUser->id}.md");
+        $this->originalProfile = file_exists($this->profilePath) ? file_get_contents($this->profilePath) : null;
 
         $this->reviewer = new ProfileReviewer(
             new AIProviderFactory,
@@ -39,7 +39,11 @@ class ProfileReviewerTest extends TestCase
 
     protected function tearDown(): void
     {
-        file_put_contents($this->profilePath, $this->originalProfile);
+        if ($this->originalProfile === null) {
+            @unlink($this->profilePath);
+        } else {
+            file_put_contents($this->profilePath, $this->originalProfile);
+        }
 
         parent::tearDown();
     }

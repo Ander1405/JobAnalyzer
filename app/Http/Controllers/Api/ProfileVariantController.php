@@ -9,6 +9,7 @@ use App\Models\Profile;
 use App\Services\Profile\ProfileVariantService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use RuntimeException;
 
 class ProfileVariantController extends Controller
@@ -26,7 +27,10 @@ class ProfileVariantController extends Controller
     public function store(Request $request, ProfileVariantService $service): JsonResponse
     {
         $validated = $request->validate([
-            'slug' => ['required', 'string', 'alpha_dash', 'max:50', 'unique:profiles,slug'],
+            'slug' => [
+                'required', 'string', 'alpha_dash', 'max:50',
+                Rule::unique('profiles', 'slug')->where('user_id', $request->user()->id),
+            ],
             'label' => ['required', 'string', 'max:255'],
             'headline' => ['nullable', 'string'],
             'summary' => ['nullable', 'string'],

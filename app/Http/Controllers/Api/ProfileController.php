@@ -7,16 +7,19 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Profile;
 use App\Services\Profile\CvImportService;
+use App\Support\ProfileFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\Rules\Password;
 use RuntimeException;
 
 class ProfileController extends Controller
 {
     public function show(): JsonResponse
     {
-        $path = storage_path('app/perfil.md');
+        $path = ProfileFile::path();
 
         return response()->json([
             'content' => file_exists($path) ? file_get_contents($path) : '',
@@ -42,5 +45,19 @@ class ProfileController extends Controller
             'content' => $profile->raw_md,
             'profile' => $profile,
         ]);
+    }
+
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return response()->json(['message' => 'Contraseña actualizada correctamente.']);
     }
 }

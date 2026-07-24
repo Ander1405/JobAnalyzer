@@ -32,6 +32,10 @@ class LaraJobsRssFetcherTest extends TestCase
         $this->assertSame('https://larajobs.com/job/3905', $first->url);
         $this->assertStringContainsString('Location: Remote / Europe', $first->description);
         $this->assertStringContainsString('Tags: MySQL,PHP,React,Redis', $first->description);
+        $this->assertSame('https://larajobs.com/job/3905', $first->applyUrl);
+        $this->assertSame('Remote / Europe', $first->location);
+        $this->assertTrue($first->isRemote);
+        $this->assertSame('Remoto', $first->workMode);
     }
 
     public function test_it_falls_back_to_splitting_the_title_when_job_company_is_empty(): void
@@ -50,5 +54,8 @@ class LaraJobsRssFetcherTest extends TestCase
         $this->assertSame('Legacy Corp', $legacy->company);
         $this->assertSame('Backend Developer', $legacy->title);
         $this->assertSame('We need a backend developer with Laravel experience.', $legacy->description);
+        $this->assertNull($legacy->location);
+        $this->assertNull($legacy->isRemote);
+        $this->assertNull($legacy->workMode);
     }
 }

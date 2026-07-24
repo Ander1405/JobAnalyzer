@@ -7,6 +7,7 @@ namespace Database\Factories;
 use App\Enums\ApplicationStatus;
 use App\Enums\JobStatus;
 use App\Models\Job;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -29,6 +30,10 @@ class JobFactory extends Factory
         $url = fake()->url();
 
         return [
+            // Defaults to whoever the test/request is acting as (set by BelongsToUser
+            // on create anyway) so factory-made jobs line up with route-scoped lookups
+            // in feature tests without every call site overriding it.
+            'user_id' => fn () => auth()->id() ?? User::factory(),
             'hash' => hash('sha256', $source.$company.$title.$url),
             'source' => $source,
             'company' => $company,
@@ -64,6 +69,10 @@ class JobFactory extends Factory
                 'ingles_requerido' => 'Intermedio',
                 'alerta_ingles' => false,
                 'red_flags' => [],
+                'seniority_inferido' => 'Senior',
+                'modalidad_inferida' => 'Remoto',
+                'skills_requeridos' => ['Laravel', 'Vue'],
+                'resumen_ejecutivo' => 'Vacante de desarrollo full stack con Laravel y Vue.',
             ],
         ]);
     }

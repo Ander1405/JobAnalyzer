@@ -11,4 +11,7 @@ enum JobStatus: string
     case Analyzed = 'analyzed';
     case Published = 'published';
     case Failed = 'failed';
+
+    /** Rejected by the profile pre-filter, before spending an AI call on it. */
+    case Discarded = 'discarded';
 }

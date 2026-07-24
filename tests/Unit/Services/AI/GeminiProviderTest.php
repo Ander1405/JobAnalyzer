@@ -30,6 +30,10 @@ class GeminiProviderTest extends TestCase
             'ingles_requerido' => 'Avanzado',
             'alerta_ingles' => true,
             'red_flags' => [],
+            'seniority_inferido' => 'No especificado',
+            'modalidad_inferida' => 'No especificado',
+            'skills_requeridos' => [],
+            'resumen_ejecutivo' => 'Resumen de la vacante.',
         ];
 
         Http::fake([

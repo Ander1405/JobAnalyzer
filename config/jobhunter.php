@@ -19,6 +19,25 @@ return [
     'claude_cli' => [
         'binary' => env('CLAUDE_CLI_BINARY', 'claude'),
         'model' => env('CLAUDE_CLI_MODEL'),
+
+        /*
+        | On macOS the Claude CLI keeps its session in the login Keychain, which is
+        | only reachable from processes inside the user's GUI session. PHP-FPM is
+        | launched by a root LaunchDaemon (session 0), so `claude -p` there always
+        | answers "Not logged in · Please run /login" no matter who is logged in.
+        | A long-lived token (`claude setup-token`) is session-independent and is
+        | what makes the web requests work; the queue worker, started from your
+        | terminal, would work either way.
+        */
+        'oauth_token' => env('CLAUDE_CODE_OAUTH_TOKEN'),
+        'api_key' => env('ANTHROPIC_API_KEY'),
+
+        /*
+        | Extended thinking burns output tokens (and wall-clock time) on reasoning
+        | that never reaches the "result" field we parse — see the analysis behind
+        | this default. 0 disables it; leave unset (null) to use the CLI's default.
+        */
+        'max_thinking_tokens' => env('CLAUDE_CLI_MAX_THINKING_TOKENS', 0),
     ],
 
     'gemini' => [
@@ -54,6 +73,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Queue
+    |--------------------------------------------------------------------------
+    |
+    | How many `queue:work` processes `composer dev` starts for the "analysis"
+    | queue (see AppServiceProvider). Each AI call is ~10-50s of wall-clock spent
+    | waiting on the provider, not CPU, so running several at once shortens a
+    | fetch's total analysis time roughly by this factor.
+    */
+
+    'analysis_workers' => (int) env('JOBHUNTER_ANALYSIS_WORKERS', 4),
+
+    /*
+    |--------------------------------------------------------------------------
     | Notion Backup
     |--------------------------------------------------------------------------
     */
@@ -77,10 +109,22 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'min_match_to_publish' => (int) env('MIN_MATCH_TO_PUBLISH', 75),
+    'min_match_to_publish' => (int) env('MIN_MATCH_TO_PUBLISH', 65),
 
     'active_profile' => env('ACTIVE_PROFILE', 'default'),
 
     'pdftotext_binary' => env('PDFTOTEXT_BINARY', 'pdftotext'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Owner (single-user authentication)
+    |--------------------------------------------------------------------------
+    */
+
+    'owner' => [
+        'name' => env('OWNER_NAME', 'Owner'),
+        'email' => env('OWNER_EMAIL', 'owner@example.com'),
+        'password' => env('OWNER_PASSWORD', 'password'),
+    ],
 
 ];

@@ -35,7 +35,9 @@ class ClaudeCliProviderTest extends TestCase
         $job = Job::factory()->make();
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessageMatches('/logged in/');
+        // The remedy, not the CLI's raw JSON: a web request cannot be fixed by
+        // logging in at a terminal, it needs CLAUDE_CODE_OAUTH_TOKEN.
+        $this->expectExceptionMessageMatches('/CLAUDE_CODE_OAUTH_TOKEN/');
 
         (new ClaudeCliProvider)->analyze('# Perfil de prueba', $job);
     }
@@ -50,5 +52,19 @@ class ClaudeCliProviderTest extends TestCase
         $result = (new ClaudeCliProvider)->complete('system', 'user');
 
         $this->assertNotSame('', $result->text);
+    }
+
+    public function test_it_forwards_the_configured_oauth_token_to_the_subprocess(): void
+    {
+        // The only credential that survives outside the user's GUI session, and
+        // therefore the only one a PHP-FPM request can authenticate with.
+        config([
+            'jobhunter.claude_cli.binary' => base_path('tests/Fixtures/fake-claude-cli-echo-token'),
+            'jobhunter.claude_cli.oauth_token' => 'sk-ant-oat-test',
+        ]);
+
+        $result = (new ClaudeCliProvider)->complete('system', 'user');
+
+        $this->assertSame('sk-ant-oat-test', $result->text);
     }
 }

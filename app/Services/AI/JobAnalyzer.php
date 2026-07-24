@@ -9,6 +9,7 @@ use App\Enums\JobStatus;
 use App\Models\AiSetting;
 use App\Models\Job;
 use App\Models\Profile;
+use App\Support\ProfileFile;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
@@ -32,7 +33,11 @@ con exactamente este esquema:
   "moneda": "<COP|USD|EUR|No especificado>",
   "ingles_requerido": "<None|Básico|Intermedio|Avanzado|No especificado>",
   "alerta_ingles": <true|false>,
-  "red_flags": ["<señal de alerta 1 basada en el desajuste con el PERFIL>", "..."]
+  "red_flags": ["<señal de alerta 1 basada en el desajuste con el PERFIL>", "..."],
+  "seniority_inferido": "<Junior|Mid|Senior|Lead|No especificado>",
+  "modalidad_inferida": "<Remoto|Híbrido|Presencial|No especificado>",
+  "skills_requeridos": ["<skill 1>", "<skill 2>", "..."],
+  "resumen_ejecutivo": "<2-3 frases que resuman la vacante de un vistazo>"
 }
 
 Reglas: sé específico, no genérico. Normaliza salarios ambiguos con tu mejor criterio.
@@ -44,6 +49,9 @@ concretos entre la VACANTE y el PERFIL real (stack que no coincide, seniority
 desalineado, salario ausente, descripción vaga); no inventes red flags genéricas,
 si no hay ninguna real devuelve un array vacío. Todo el análisis se basa
 EXCLUSIVAMENTE en la información del PERFIL.
+seniority_inferido, modalidad_inferida y skills_requeridos son un complemento: infierelos
+ÚNICAMENTE a partir del texto de la VACANTE (no del perfil), y usa "No especificado" o un
+array vacío si la descripción no da información suficiente para inferirlos con confianza.
 PROMPT;
 
     /**
@@ -56,12 +64,15 @@ PROMPT;
         'salario_normalizado',
         'moneda',
         'ingles_requerido',
+        'seniority_inferido',
+        'modalidad_inferida',
+        'resumen_ejecutivo',
     ];
 
     /**
      * @var array<int, string>
      */
-    private const ARRAY_KEYS = ['tips_postulacion', 'tailoring_cv', 'red_flags'];
+    private const ARRAY_KEYS = ['tips_postulacion', 'tailoring_cv', 'red_flags', 'skills_requeridos'];
 
     private ?string $lastError = null;
 
@@ -77,7 +88,7 @@ PROMPT;
     {
         try {
             $activeProfile = Profile::active();
-            $perfilMd = $activeProfile !== null ? $activeProfile->raw_md : (string) file_get_contents(storage_path('app/perfil.md'));
+            $perfilMd = $activeProfile !== null ? $activeProfile->raw_md : (string) file_get_contents(ProfileFile::path());
             $provider = $this->factory->make();
             $providerName = AiSetting::current()->provider;
         } catch (Throwable $exception) {
@@ -110,7 +121,34 @@ PROMPT;
             'ai_output_tokens' => $result->usage->outputTokens,
             'ai_cost_usd' => $result->usage->costUsd,
             'status' => JobStatus::Analyzed,
+            ...$this->inferredMetadata($job, $result->analysis),
         ]);
+    }
+
+    /**
+     * The AI only complements metadata the source failed to provide — it never
+     * overrides values the fetchers already populated.
+     *
+     * @param  array<string, mixed>  $analysis
+     * @return array<string, mixed>
+     */
+    private function inferredMetadata(Job $job, array $analysis): array
+    {
+        $metadata = [];
+
+        if (blank($job->seniority) && ($analysis['seniority_inferido'] ?? 'No especificado') !== 'No especificado') {
+            $metadata['seniority'] = $analysis['seniority_inferido'];
+        }
+
+        if (blank($job->work_mode) && ($analysis['modalidad_inferida'] ?? 'No especificado') !== 'No especificado') {
+            $metadata['work_mode'] = $analysis['modalidad_inferida'];
+        }
+
+        if (blank($job->required_skills) && ! empty($analysis['skills_requeridos'])) {
+            $metadata['required_skills'] = $analysis['skills_requeridos'];
+        }
+
+        return $metadata;
     }
 
     private function attempt(AIProvider $provider, string $perfilMd, Job $job): ?AiAnalysisResult

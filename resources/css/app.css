@@ -3,9 +3,259 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    color-scheme: light;
+
+    --jh-canvas: #f2f5fb;
+    --jh-surface: #ffffff;
+    --jh-surface-raised: #ffffff;
+    --jh-surface-subtle: #e9eef7;
+    --jh-surface-inverse: #10182b;
+    --jh-text: #131c31;
+    --jh-text-muted: #526078;
+    --jh-text-subtle: #5f6c82;
+    --jh-text-inverse: #f7f9fd;
+    --jh-border: #ced6e4;
+    --jh-border-strong: #7d8ba1;
+    --jh-primary: #1749e9;
+    --jh-primary-hover: #103bc5;
+    --jh-primary-active: #0d309f;
+    --jh-primary-subtle: #e5ebff;
+    --jh-primary-contrast: #ffffff;
+    --jh-secondary: #44546f;
+    --jh-secondary-hover: #33425d;
+    --jh-secondary-active: #27354e;
+    --jh-secondary-subtle: #e7ecf4;
+    --jh-secondary-contrast: #ffffff;
+    --jh-focus: #1749e9;
+
+    --jh-score-excellent: #087a55;
+    --jh-score-excellent-surface: #dcf8ec;
+    --jh-score-very-good: #1764d8;
+    --jh-score-very-good-surface: #e0ecff;
+    --jh-score-acceptable: #9a5800;
+    --jh-score-acceptable-surface: #fff0cf;
+    --jh-score-low: #b42318;
+    --jh-score-low-surface: #fee4e2;
+
+    --jh-success: #087a55;
+    --jh-success-surface: #dcf8ec;
+    --jh-warning: #9a5800;
+    --jh-warning-surface: #fff0cf;
+    --jh-error: #b42318;
+    --jh-error-surface: #fee4e2;
+    --jh-error-contrast: #ffffff;
+    --jh-info: #1764d8;
+    --jh-info-surface: #e0ecff;
+
+    --jh-shadow-card:
+        0 1px 2px rgb(16 24 40 / 0.06), 0 8px 18px -12px rgb(16 24 40 / 0.22);
+    --jh-shadow-raised:
+        0 2px 4px rgb(16 24 40 / 0.08), 0 18px 40px -18px rgb(16 24 40 / 0.32);
+    --jh-shadow-action:
+        0 2px 3px rgb(12 37 118 / 0.18), 0 8px 18px -10px rgb(23 73 233 / 0.72);
+}
+
+.dark {
+    color-scheme: dark;
+
+    --jh-canvas: #08101f;
+    --jh-surface: #0e182b;
+    --jh-surface-raised: #15213a;
+    --jh-surface-subtle: #1b2944;
+    --jh-surface-inverse: #f4f7fc;
+    --jh-text: #f4f7fc;
+    --jh-text-muted: #b6c0d1;
+    --jh-text-subtle: #94a2b8;
+    --jh-text-inverse: #10182b;
+    --jh-border: #2b3a57;
+    --jh-border-strong: #607393;
+    --jh-primary: #7898ff;
+    --jh-primary-hover: #91aaff;
+    --jh-primary-active: #adc0ff;
+    --jh-primary-subtle: #1b2e66;
+    --jh-primary-contrast: #07112b;
+    --jh-secondary: #b6c4d8;
+    --jh-secondary-hover: #cad5e4;
+    --jh-secondary-active: #dce5f1;
+    --jh-secondary-subtle: #1a293f;
+    --jh-secondary-contrast: #10182b;
+    --jh-focus: #91aaff;
+
+    --jh-score-excellent: #62ddb2;
+    --jh-score-excellent-surface: #123d33;
+    --jh-score-very-good: #8db5ff;
+    --jh-score-very-good-surface: #192f5a;
+    --jh-score-acceptable: #ffc768;
+    --jh-score-acceptable-surface: #493214;
+    --jh-score-low: #ff9b94;
+    --jh-score-low-surface: #4a2325;
+
+    --jh-success: #62ddb2;
+    --jh-success-surface: #123d33;
+    --jh-warning: #ffc768;
+    --jh-warning-surface: #493214;
+    --jh-error: #ff9b94;
+    --jh-error-surface: #4a2325;
+    --jh-error-contrast: #3b1114;
+    --jh-info: #8db5ff;
+    --jh-info-surface: #192f5a;
+
+    --jh-shadow-card:
+        0 1px 2px rgb(0 0 0 / 0.24), 0 10px 24px -14px rgb(0 0 0 / 0.7);
+    --jh-shadow-raised:
+        0 2px 5px rgb(0 0 0 / 0.32), 0 22px 48px -20px rgb(0 0 0 / 0.86);
+    --jh-shadow-action:
+        0 2px 3px rgb(0 0 0 / 0.28), 0 10px 22px -12px rgb(120 152 255 / 0.64);
+}
+
 @theme inline {
     --font-sans:
-        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+    --font-data:
+        ui-monospace, 'SFMono-Regular', 'Cascadia Code', 'Roboto Mono',
+        monospace;
+
+    --color-canvas: var(--jh-canvas);
+    --color-surface: var(--jh-surface);
+    --color-surface-raised: var(--jh-surface-raised);
+    --color-surface-subtle: var(--jh-surface-subtle);
+    --color-surface-inverse: var(--jh-surface-inverse);
+    --color-ink: var(--jh-text);
+    --color-ink-muted: var(--jh-text-muted);
+    --color-ink-subtle: var(--jh-text-subtle);
+    --color-ink-inverse: var(--jh-text-inverse);
+    --color-line: var(--jh-border);
+    --color-line-strong: var(--jh-border-strong);
+    --color-primary: var(--jh-primary);
+    --color-primary-hover: var(--jh-primary-hover);
+    --color-primary-active: var(--jh-primary-active);
+    --color-primary-subtle: var(--jh-primary-subtle);
+    --color-primary-contrast: var(--jh-primary-contrast);
+    --color-secondary: var(--jh-secondary);
+    --color-secondary-hover: var(--jh-secondary-hover);
+    --color-secondary-active: var(--jh-secondary-active);
+    --color-secondary-subtle: var(--jh-secondary-subtle);
+    --color-secondary-contrast: var(--jh-secondary-contrast);
+    --color-focus: var(--jh-focus);
+
+    --color-score-excellent: var(--jh-score-excellent);
+    --color-score-excellent-surface: var(--jh-score-excellent-surface);
+    --color-score-very-good: var(--jh-score-very-good);
+    --color-score-very-good-surface: var(--jh-score-very-good-surface);
+    --color-score-acceptable: var(--jh-score-acceptable);
+    --color-score-acceptable-surface: var(--jh-score-acceptable-surface);
+    --color-score-low: var(--jh-score-low);
+    --color-score-low-surface: var(--jh-score-low-surface);
+
+    --color-success: var(--jh-success);
+    --color-success-surface: var(--jh-success-surface);
+    --color-warning: var(--jh-warning);
+    --color-warning-surface: var(--jh-warning-surface);
+    --color-error: var(--jh-error);
+    --color-error-surface: var(--jh-error-surface);
+    --color-error-contrast: var(--jh-error-contrast);
+    --color-info: var(--jh-info);
+    --color-info-surface: var(--jh-info-surface);
+
+    --color-signal-25: #f8faff;
+    --color-signal-50: #f1f5ff;
+    --color-signal-100: #dce6ff;
+    --color-signal-200: #b8caff;
+    --color-signal-500: #1749e9;
+    --color-signal-600: #123bbf;
+    --color-signal-700: #102f96;
+    --color-signal-950: #101828;
+    --color-signal-slate: #475467;
+
+    --radius-control: 0.625rem;
+    --radius-card: 0.875rem;
+    --radius-panel: 1.125rem;
+
+    --shadow-card: var(--jh-shadow-card);
+    --shadow-raised: var(--jh-shadow-raised);
+    --shadow-action: var(--jh-shadow-action);
+
+    --ease-signal-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --animate-skeleton: skeleton-scan 1.6s ease-in-out infinite;
+    --animate-toast-in: toast-in 280ms var(--ease-signal-out) both;
+    --animate-score-in: score-in 680ms var(--ease-signal-out) both;
+}
+
+@keyframes skeleton-scan {
+    0%,
+    100% {
+        opacity: 0.52;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes toast-in {
+    from {
+        transform: translateY(0.75rem);
+        opacity: 0;
+    }
+}
+
+@keyframes score-in {
+    from {
+        stroke-dashoffset: 100;
+    }
+}
+
+@layer base {
+    html {
+        min-width: 20rem;
+        background: var(--jh-canvas);
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+    }
+
+    body {
+        min-height: 100vh;
+        background: var(--jh-canvas);
+        color: var(--jh-text);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+        font: inherit;
+    }
+
+    button,
+    [role='button'],
+    a,
+    select {
+        touch-action: manipulation;
+    }
+
+    :target {
+        scroll-margin-top: 5rem;
+    }
+
+    ::selection {
+        background: var(--jh-primary);
+        color: var(--jh-primary-contrast);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

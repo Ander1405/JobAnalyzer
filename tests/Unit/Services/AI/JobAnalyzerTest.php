@@ -20,19 +20,24 @@ class JobAnalyzerTest extends TestCase
 
     private string $profilePath;
 
-    private string $originalProfile;
+    private ?string $originalProfile;
+
+    /**
+     * @var array<string, mixed>
+     */
+    private array $aiPayload;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->profilePath = storage_path('app/perfil.md');
-        $this->originalProfile = file_get_contents($this->profilePath);
+        $this->profilePath = storage_path("app/perfil_{$this->actingUser->id}.md");
+        $this->originalProfile = file_exists($this->profilePath) ? file_get_contents($this->profilePath) : null;
 
         config(['jobhunter.gemini.api_key' => 'test-key']);
         AiSetting::current()->update(['provider' => 'gemini', 'model' => 'gemini-flash-latest']);
 
-        $payload = [
+        $this->aiPayload = [
             'match_score' => 80,
             'diagnostico' => 'Buen encaje.',
             'tips_postulacion' => [],
@@ -44,12 +49,18 @@ class JobAnalyzerTest extends TestCase
             'ingles_requerido' => 'No especificado',
             'alerta_ingles' => false,
             'red_flags' => [],
+            'seniority_inferido' => 'No especificado',
+            'modalidad_inferida' => 'No especificado',
+            'skills_requeridos' => [],
+            'resumen_ejecutivo' => 'Resumen de la vacante.',
         ];
 
+        // A closure re-reads $this->aiPayload on every call, so tests can override it
+        // (via array_merge before analyze()) without registering a second, shadowed stub.
         Http::fake([
-            'generativelanguage.googleapis.com/*' => Http::response([
+            'generativelanguage.googleapis.com/*' => fn () => Http::response([
                 'candidates' => [
-                    ['content' => ['parts' => [['text' => json_encode($payload)]]]],
+                    ['content' => ['parts' => [['text' => json_encode($this->aiPayload)]]]],
                 ],
                 'usageMetadata' => ['promptTokenCount' => 10, 'candidatesTokenCount' => 5],
             ], 200),
@@ -58,7 +69,11 @@ class JobAnalyzerTest extends TestCase
 
     protected function tearDown(): void
     {
-        file_put_contents($this->profilePath, $this->originalProfile);
+        if ($this->originalProfile === null) {
+            @unlink($this->profilePath);
+        } else {
+            file_put_contents($this->profilePath, $this->originalProfile);
+        }
 
         parent::tearDown();
     }
@@ -104,5 +119,30 @@ class JobAnalyzerTest extends TestCase
         $fresh = $job->fresh();
         $this->assertSame(JobStatus::Failed, $fresh->status);
         $this->assertStringContainsString('not_a_real_provider', (string) $fresh->error_message);
+    }
+
+    public function test_it_persists_ai_inferred_metadata_only_when_the_source_left_it_empty(): void
+    {
+        $this->aiPayload = array_merge($this->aiPayload, [
+            'seniority_inferido' => 'Senior',
+            'modalidad_inferida' => 'Remoto',
+            'skills_requeridos' => ['Laravel', 'Vue'],
+        ]);
+
+        $jobWithoutMetadata = Job::factory()->create(['seniority' => null, 'work_mode' => null, 'required_skills' => null]);
+        $jobWithMetadata = Job::factory()->create(['seniority' => 'Junior', 'work_mode' => 'Presencial', 'required_skills' => ['PHP']]);
+
+        (new JobAnalyzer(new AIProviderFactory))->analyze($jobWithoutMetadata);
+        (new JobAnalyzer(new AIProviderFactory))->analyze($jobWithMetadata);
+
+        $filled = $jobWithoutMetadata->fresh();
+        $this->assertSame('Senior', $filled->seniority);
+        $this->assertSame('Remoto', $filled->work_mode);
+        $this->assertSame(['Laravel', 'Vue'], $filled->required_skills);
+
+        $untouched = $jobWithMetadata->fresh();
+        $this->assertSame('Junior', $untouched->seniority);
+        $this->assertSame('Presencial', $untouched->work_mode);
+        $this->assertSame(['PHP'], $untouched->required_skills);
     }
 }

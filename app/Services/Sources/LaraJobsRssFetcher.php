@@ -41,15 +41,37 @@ class LaraJobsRssFetcher implements JobSourceInterface
                     [$company, $title] = $this->splitTitle($title);
                 }
 
+                $description = $this->buildDescription($item, $job);
+                $location = $this->nullableString($job->location);
+
                 return new JobOffer(
                     source: 'larajobs',
                     company: $company,
                     title: $title,
-                    description: $this->buildDescription($item, $job),
+                    description: $description,
                     url: (string) $item->link,
                     contractType: $this->nullableString($job->job_type),
+                    applyUrl: (string) $item->link,
+                    location: $location,
+                    isRemote: $this->guessIsRemote($location, $description),
+                    workMode: $this->guessIsRemote($location, $description) === true ? 'Remoto' : null,
                 );
             });
+    }
+
+    private function guessIsRemote(?string $location, string $description): ?bool
+    {
+        $haystack = mb_strtolower(($location ?? '').' '.$description);
+
+        if (str_contains($haystack, 'remote') || str_contains($haystack, 'remoto')) {
+            return true;
+        }
+
+        if (str_contains($haystack, 'hybrid') || str_contains($haystack, 'híbrido') || str_contains($haystack, 'hibrido')) {
+            return false;
+        }
+
+        return null;
     }
 
     private function buildDescription(SimpleXMLElement $item, SimpleXMLElement $job): string

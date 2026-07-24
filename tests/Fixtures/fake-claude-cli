@@ -13,6 +13,10 @@ $analysis = [
     'ingles_requerido' => 'Intermedio',
     'alerta_ingles' => false,
     'red_flags' => [],
+    'seniority_inferido' => 'No especificado',
+    'modalidad_inferida' => 'No especificado',
+    'skills_requeridos' => [],
+    'resumen_ejecutivo' => 'Resumen de la vacante.',
 ];
 
 fwrite(STDOUT, json_encode([

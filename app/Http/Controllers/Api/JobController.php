@@ -8,22 +8,18 @@ use App\Enums\ApplicationStatus;
 use App\Enums\JobStatus;
 use App\Http\Controllers\Controller;
 use App\Jobs\AnalyzeJobListing;
+use App\Jobs\FetchJobListings;
 use App\Models\Job;
 use App\Services\Notion\NotionPublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Validation\Rules\Enum;
 
 class JobController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Job::query();
-
-        if ($status = $request->query('status')) {
-            $query->where('status', $status);
-        }
+        $query = Job::where('status', JobStatus::Analyzed);
 
         if ($source = $request->query('source')) {
             $query->where('source', $source);
@@ -36,34 +32,33 @@ class JobController extends Controller
             });
         }
 
-        $jobs = $query->get();
-
         if ($request->filled('min_match')) {
-            $minMatch = (float) $request->query('min_match');
-            $jobs = $jobs->filter(fn (Job $job) => $job->ai_analysis === null || $this->matchScore($job) >= $minMatch)->values();
+            $minMatch = (int) $request->query('min_match', 75);
+            $query->whereRaw("CAST(json_extract(ai_analysis, '$.match_score') AS INTEGER) >= ?", [$minMatch]);
         }
 
-        $jobs = $jobs->sortByDesc(fn (Job $job) => $this->matchScore($job))->values();
-
-        $total = $jobs->count();
         $perPage = max(1, min(500, (int) $request->query('per_page', 20)));
+        $total = $query->count();
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = min(max(1, (int) $request->query('page', 1)), $lastPage);
 
+        $jobs = $query->orderByRaw("CAST(json_extract(ai_analysis, '$.match_score') AS INTEGER) DESC")
+            ->paginate($perPage, ['*'], 'page', $page);
+
         return response()->json([
-            'data' => $jobs->forPage($page, $perPage)->values(),
+            'data' => $jobs->items(),
             'meta' => [
-                'current_page' => $page,
-                'per_page' => $perPage,
-                'total' => $total,
-                'last_page' => $lastPage,
+                'current_page' => $jobs->currentPage(),
+                'per_page' => $jobs->perPage(),
+                'total' => $jobs->total(),
+                'last_page' => $jobs->lastPage(),
             ],
         ]);
     }
 
     public function show(Job $job): JsonResponse
     {
-        return response()->json($job);
+        return response()->json($job->load('trackedJob'));
     }
 
     public function sources(): JsonResponse
@@ -73,18 +68,19 @@ class JobController extends Controller
         );
     }
 
-    public function fetch(): JsonResponse
+    public function fetch(Request $request): JsonResponse
     {
-        Artisan::call('jobs:fetch');
+        FetchJobListings::dispatch($request->user()->id);
 
-        return response()->json(['output' => Artisan::output()]);
+        return response()->json(['queued' => true], 202);
     }
 
     public function analyze(Job $job): JsonResponse
     {
         $job->update(['status' => JobStatus::Analyzing, 'error_message' => null]);
 
-        AnalyzeJobListing::dispatch($job);
+        // Explicit request for this listing: the profile pre-filter does not get a vote.
+        AnalyzeJobListing::dispatch($job, skipPreFilter: true);
 
         return response()->json($job->fresh());
     }
@@ -114,10 +110,5 @@ class JobController extends Controller
         $job->update($validated);
 
         return response()->json($job);
-    }
-
-    private function matchScore(Job $job): float
-    {
-        return (float) ($job->ai_analysis['match_score'] ?? -1);
     }
 }

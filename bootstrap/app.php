@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Middleware\HandleInertiaRequests;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,6 +20,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+        ]);
+
+        // The API is first-party only (same-origin fetch calls from this app's
+        // own SPA), so it needs the session to authenticate but intentionally
+        // skips CSRF verification rather than retrofitting every fetch() call.
+        $middleware->api(prepend: [
+            EncryptCookies::class,
+            StartSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

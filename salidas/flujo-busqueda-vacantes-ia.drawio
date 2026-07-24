@@ -1,0 +1,136 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Flujo búsqueda + análisis IA">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="lane1" value="NAVEGADOR (Vue)" style="swimlane;horizontal=0;startSize=30;fillColor=#f5f5f5;strokeColor=#999999;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1520" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="n1" value="MarketplaceView.vue&#10;botón «Buscar nuevas»" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lane1">
+          <mxGeometry x="60" y="45" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="n2" value="waitForFetch()&#10;polling cada 3 s × 20&#10;⚠ se rinde a los 60 s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="lane1">
+          <mxGeometry x="1150" y="40" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lane2" value="PHP-FPM (request HTTP)" style="swimlane;horizontal=0;startSize=30;fillColor=#f5f5f5;strokeColor=#999999;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="1520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="n3" value="POST /api/jobs/fetch&#10;JobController::fetch()&#10;→ 202 inmediato" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
+          <mxGeometry x="60" y="35" width="180" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n4" value="FetchJobListings::dispatch()&#10;tabla `jobs` (driver database)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="lane2">
+          <mxGeometry x="300" y="35" width="200" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lane3" value="QUEUE WORKER (1 solo proceso, SERIAL)" style="swimlane;horizontal=0;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="340" width="1520" height="290" as="geometry" />
+        </mxCell>
+        <mxCell id="n5" value="FetchJobListings&#10;timeout 600 s · tries 1&#10;Artisan::call('jobs:fetch --queue')" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="lane3">
+          <mxGeometry x="60" y="30" width="200" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="n6" value="JobsFetch (comando)&#10;3 fuentes EN SERIE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="lane3">
+          <mxGeometry x="320" y="35" width="170" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n7" value="firstOrCreate(hash)&#10;job_offers&#10;nuevas → status=analyzing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lane3">
+          <mxGeometry x="810" y="35" width="190" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n8" value="AnalyzeJobListing (×N)&#10;timeout 300 s · tries 1&#10;⚠ una por una, sin lotes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="lane3">
+          <mxGeometry x="1060" y="30" width="200" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="n9" value="JobAnalysisPipeline&#10;ProfileMatcher (prefiltro&#10;php/laravel/vue/js) → discarded" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lane3">
+          <mxGeometry x="1060" y="150" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="n10" value="JobAnalyzer::analyze()&#10;perfil.md + vacante&#10;2 intentos si falla" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lane3">
+          <mxGeometry x="810" y="150" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="n11" value="AIProviderFactory&#10;AiSetting::current()->provider&#10;claude_cli | gemini | openrouter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="lane3">
+          <mxGeometry x="530" y="150" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="n12" value="ClaudeCliProvider&#10;Symfony Process, timeout 120 s&#10;HOME + OAUTH_TOKEN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="lane3">
+          <mxGeometry x="270" y="150" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lane4" value="FUERA DE PHP" style="swimlane;horizontal=0;startSize=30;fillColor=#f5f5f5;strokeColor=#999999;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="640" width="1520" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="n13" value="JSearch (RapidAPI)&#10;3 queries en serie&#10;timeout 30 s · retry 3×2 s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="lane4">
+          <mxGeometry x="320" y="35" width="170" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="n14" value="LaraJobs RSS&#10;timeout 30 s · retry 3×2 s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="lane4">
+          <mxGeometry x="530" y="40" width="170" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="n15" value="InfoJobs (deshabilitado)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;" vertex="1" parent="lane4">
+          <mxGeometry x="740" y="45" width="160" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="n16" value="proceso `claude -p --output-format json`&#10;CLI de Claude Code (Node)&#10;carga CLAUDE.md, skills, MCP, hooks&#10;≈28.000 tokens de andamiaje ANTES del prompt&#10;extended thinking ON → ~3.900 tokens extra" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="lane4">
+          <mxGeometry x="180" y="135" width="380" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n17" value="API Anthropic&#10;claude-haiku-4-5&#10;MEDIDO: 49,5 s · $0,046 · 4.709 tok salida" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="lane4">
+          <mxGeometry x="640" y="140" width="300" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="nota" value="CUELLO DE BOTELLA&#10;24 vacantes × 52 s (media real en BD) ≈ 21 min de reloj,&#10;porque el worker es UNO y va en serie.&#10;La UI deja de refrescar a los 60 s → el usuario cree que terminó." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="900" width="560" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="nota2" value="MEDICIONES EN ESTA MÁQUINA (mismo prompt, mismo modelo haiku-4-5)&#10;A) tal cual hoy .......................... 49,5 s · $0,046 · 4.709 tok salida&#10;B) + MAX_THINKING_TOKENS=0 ............... 22,5 s · $0,023 · 1.798 tok salida&#10;C) B + --strict-mcp-config + sin tools ... 11,9 s · $0,020 ·   925 tok salida&#10;→ 4,1× más rápido sin cambiar de proveedor ni de lenguaje." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="40" y="900" width="930" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n1" target="n3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n3" target="n4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="202 → arranca polling" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;dashed=1;" edge="1" parent="1" source="n3" target="n2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n4" target="n5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n5" target="n6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n6" target="n13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n6" target="n14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;dashed=1;" edge="1" parent="1" source="n6" target="n15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n6" target="n7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="1 job por vacante nueva" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n7" target="n8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n8" target="n9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n9" target="n10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n10" target="n11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n11" target="n12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n12" target="n16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;" edge="1" parent="1" source="n16" target="n17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="JSON → status=analyzed" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=1;dashed=1;" edge="1" parent="1" source="n17" target="n7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
