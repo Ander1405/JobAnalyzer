@@ -7,9 +7,18 @@ FORM: Recorrido de señal a postulación, con una demostración operativa como p
 -->
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { motion } from 'motion-v';
 import AppIcon from '@/components/AppIcon.vue';
 import { BaseButton, MatchScore } from '@/components/ui';
 import GuestLayout from '@/layouts/GuestLayout.vue';
+
+// Reveal en scroll (fade + translateY 14px, como .reveal del sistema visual).
+// motion.* hereda reducedMotion="user" del MotionConfig global en app.ts, así
+// que no necesita un check manual de prefers-reduced-motion aquí.
+const revealInitial = { opacity: 0, y: 14 };
+const revealInView = { opacity: 1, y: 0 };
+const revealTransition = { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const };
+const revealViewport = { once: true, margin: '-80px' };
 </script>
 
 <template>
@@ -22,7 +31,7 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
             >
                 <div class="max-w-2xl">
                     <p
-                        class="mb-6 inline-flex items-center gap-2 rounded-control bg-primary-subtle px-3 py-2 text-sm font-semibold text-primary"
+                        class="mb-6 inline-flex items-center gap-2 rounded-control bg-primary-subtle px-3 py-2 font-data text-step-eyebrow font-semibold tracking-[0.12em] text-primary uppercase"
                     >
                         <span
                             class="h-2 w-2 rounded-full bg-primary"
@@ -31,13 +40,15 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
                         Tu búsqueda laboral, con criterio
                     </p>
                     <h1
-                        class="text-5xl leading-[0.98] font-semibold tracking-[-0.04em] text-balance sm:text-6xl lg:text-[4.5rem]"
+                        class="text-step-h1 leading-[0.98] font-semibold tracking-[-0.04em] text-balance"
                     >
-                        Vacantes que encajan. Un CV que responde.
+                        Vacantes que
+                        <span
+                            class="bg-gradient-to-r from-primary to-score-excellent bg-clip-text text-transparent"
+                            >encajan</span
+                        >. Un CV que responde.
                     </h1>
-                    <p
-                        class="mt-7 max-w-xl text-lg leading-8 text-ink-muted sm:text-xl"
-                    >
+                    <p class="mt-7 max-w-xl text-step-lead text-ink-muted">
                         JobHunter encuentra oportunidades afines a tu perfil,
                         explica el match y te ayuda a adaptar tu CV para cada
                         postulación.
@@ -92,21 +103,25 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
                     </div>
 
                     <div
-                        class="grid gap-6 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-7"
+                        class="grid justify-items-center gap-6 p-5 text-center sm:p-7"
                     >
+                        <!-- SIGNATURE: el dial de match-score, pieza central del hero -->
+                        <MatchScore :score="87" size="hero" />
                         <div>
                             <p class="text-sm font-medium text-signal-200">
                                 Vacante encontrada
                             </p>
                             <h2
-                                class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white"
+                                class="mt-2 text-step-h3 font-semibold tracking-[-0.03em] text-white"
                             >
                                 Frontend Engineer
                             </h2>
                             <p class="mt-1 text-sm text-slate-400">
                                 Remoto · Producto digital
                             </p>
-                            <div class="mt-5 flex flex-wrap gap-2">
+                            <div
+                                class="mt-5 flex flex-wrap justify-center gap-2"
+                            >
                                 <span
                                     class="rounded-control border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-slate-200"
                                     >Vue 3</span
@@ -121,7 +136,6 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
                                 >
                             </div>
                         </div>
-                        <MatchScore :score="87" size="card" />
                     </div>
 
                     <div class="border-t border-slate-800 px-5 sm:px-7">
@@ -200,22 +214,29 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
             >
                 <h2
                     id="features-title"
-                    class="max-w-xl text-3xl leading-tight font-semibold tracking-[-0.04em] text-balance sm:text-4xl"
+                    class="max-w-xl text-step-h2 leading-tight font-semibold tracking-[-0.04em] text-balance"
                 >
                     Una sola ruta para decidir, preparar y avanzar.
                 </h2>
-                <p
-                    class="max-w-2xl text-lg leading-8 text-ink-muted lg:ml-auto"
-                >
+                <p class="max-w-2xl text-step-lead text-ink-muted lg:ml-auto">
                     JobHunter conecta las piezas que suelen quedar separadas:
                     descubrir vacantes, evaluar el encaje, adaptar el CV y
                     recordar qué sigue.
                 </p>
             </div>
 
-            <div class="mt-10 grid gap-5 lg:grid-cols-12">
-                <article
-                    class="flex flex-col overflow-hidden rounded-panel bg-signal-950 text-slate-100 shadow-raised lg:col-span-7 lg:row-span-2"
+            <!-- @container/features: la grilla de tarjetas reflow según SU ancho,
+                 no el del viewport — coherente con GuestLayout, que ya expone
+                 @container/content en <main>. -->
+            <div
+                class="@container/features mt-10 grid gap-5 @4xl/features:grid-cols-12"
+            >
+                <motion.article
+                    :initial="revealInitial"
+                    :while-in-view="revealInView"
+                    :viewport="revealViewport"
+                    :transition="revealTransition"
+                    class="flex flex-col overflow-hidden rounded-panel bg-signal-950 text-slate-100 shadow-raised @4xl/features:col-span-7 @4xl/features:row-span-2"
                 >
                     <div class="p-6 sm:p-8">
                         <AppIcon
@@ -223,7 +244,7 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
                             class="h-7 w-7 text-signal-200"
                         />
                         <h3
-                            class="mt-8 text-2xl font-semibold tracking-[-0.03em] text-white sm:text-3xl"
+                            class="mt-8 text-step-h3 font-semibold tracking-[-0.03em] text-white"
                         >
                             Marketplace con match por IA
                         </h3>
@@ -308,10 +329,14 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
                             </div>
                         </div>
                     </div>
-                </article>
+                </motion.article>
 
-                <article
-                    class="rounded-panel border border-line bg-surface p-6 shadow-card sm:p-8 lg:col-span-5"
+                <motion.article
+                    :initial="revealInitial"
+                    :while-in-view="revealInView"
+                    :viewport="revealViewport"
+                    :transition="revealTransition"
+                    class="rounded-panel border border-line bg-surface p-6 shadow-card sm:p-8 @4xl/features:col-span-5"
                 >
                     <div class="flex items-start justify-between gap-5">
                         <div>
@@ -320,7 +345,7 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
                                 class="h-7 w-7 text-primary"
                             />
                             <h3
-                                class="mt-6 text-2xl font-semibold tracking-[-0.03em]"
+                                class="mt-6 text-step-h3 font-semibold tracking-[-0.03em]"
                             >
                                 Tracking sin hojas sueltas
                             </h3>
@@ -360,13 +385,19 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
                             >
                         </div>
                     </div>
-                </article>
+                </motion.article>
 
-                <article
-                    class="rounded-panel border border-line bg-primary-subtle p-6 sm:p-8 lg:col-span-5"
+                <motion.article
+                    :initial="revealInitial"
+                    :while-in-view="revealInView"
+                    :viewport="revealViewport"
+                    :transition="revealTransition"
+                    class="rounded-panel border border-line bg-primary-subtle p-6 sm:p-8 @4xl/features:col-span-5"
                 >
                     <AppIcon name="profile" class="h-7 w-7 text-primary" />
-                    <h3 class="mt-6 text-2xl font-semibold tracking-[-0.03em]">
+                    <h3
+                        class="mt-6 text-step-h3 font-semibold tracking-[-0.03em]"
+                    >
                         Un CV base. Variantes con propósito.
                     </h3>
                     <p class="mt-3 leading-7 text-ink-muted">
@@ -397,7 +428,7 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
                             >
                         </div>
                     </div>
-                </article>
+                </motion.article>
             </div>
             <p class="mt-4 text-right text-xs text-ink-subtle">
                 Datos mostrados con fines ilustrativos.
@@ -408,9 +439,14 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
             <div
                 class="mx-auto grid w-full max-w-7xl gap-8 px-4 py-14 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:px-8"
             >
-                <div>
+                <motion.div
+                    :initial="revealInitial"
+                    :while-in-view="revealInView"
+                    :viewport="revealViewport"
+                    :transition="revealTransition"
+                >
                     <h2
-                        class="max-w-2xl text-3xl leading-tight font-semibold tracking-[-0.04em] text-balance sm:text-4xl"
+                        class="max-w-2xl text-step-h2 leading-tight font-semibold tracking-[-0.04em] text-balance"
                     >
                         Tu próxima postulación puede empezar con más contexto.
                     </h2>
@@ -418,7 +454,7 @@ import GuestLayout from '@/layouts/GuestLayout.vue';
                         Crea tu cuenta, completa tu perfil y convierte el ruido
                         del mercado en una lista de decisiones claras.
                     </p>
-                </div>
+                </motion.div>
                 <BaseButton
                     :as="Link"
                     href="/register"

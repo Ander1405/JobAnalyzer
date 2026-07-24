@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AnimatePresence, motion } from 'motion-v';
 import { computed, onMounted, reactive, ref } from 'vue';
 import AppIcon from '@/components/AppIcon.vue';
 import {
@@ -214,15 +215,19 @@ function failureMessage(error: unknown, fallback: string): string {
         <header class="mb-5 border-b border-line pb-5">
             <div class="flex flex-wrap items-end justify-between gap-4">
                 <div class="min-w-0">
-                    <p class="mb-2 text-xs font-semibold text-primary">
+                    <p
+                        class="mb-2 text-step-eyebrow font-semibold text-primary"
+                    >
                         ADMINISTRACIÓN
                     </p>
                     <h1
-                        class="text-3xl font-semibold tracking-[-0.04em] text-balance text-ink"
+                        class="text-step-h2 font-semibold tracking-[-0.04em] text-balance text-ink"
                     >
                         Roles y permisos
                     </h1>
-                    <p class="mt-1 max-w-2xl text-sm leading-6 text-ink-muted">
+                    <p
+                        class="mt-1 max-w-2xl text-step-body leading-6 text-ink-muted"
+                    >
                         Define responsabilidades con permisos explícitos y
                         revisa cuántas personas usan cada rol.
                     </p>
@@ -256,9 +261,13 @@ function failureMessage(error: unknown, fallback: string): string {
             </nav>
         </header>
 
+        <!-- Grid por @container/content (convención de AppLayout) en vez de
+             breakpoints de viewport: reacciona al ancho real del panel, no
+             al de la ventana, así el sidebar puede angostar/ensanchar el
+             contenido sin dejar columnas apretadas. -->
         <div
             v-if="loading"
-            class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+            class="grid gap-4 @lg/content:grid-cols-2 @4xl/content:grid-cols-3"
             aria-label="Cargando roles"
         >
             <BaseCard v-for="item in 3" :key="item" class="grid gap-4">
@@ -301,7 +310,7 @@ function failureMessage(error: unknown, fallback: string): string {
 
         <section
             v-else
-            class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+            class="grid gap-4 @lg/content:grid-cols-2 @4xl/content:grid-cols-3"
             aria-label="Roles disponibles"
         >
             <BaseCard
@@ -468,14 +477,20 @@ function failureMessage(error: unknown, fallback: string): string {
                             </div>
                         </section>
                     </div>
-                    <p
-                        v-if="permissionsError()"
-                        id="role-permissions-error"
-                        class="text-xs font-medium text-error"
-                        role="alert"
-                    >
-                        {{ permissionsError() }}
-                    </p>
+                    <AnimatePresence>
+                        <motion.p
+                            v-if="permissionsError()"
+                            id="role-permissions-error"
+                            class="text-xs font-medium text-error"
+                            role="alert"
+                            :initial="{ opacity: 0, y: -4 }"
+                            :animate="{ opacity: 1, y: 0 }"
+                            :exit="{ opacity: 0 }"
+                            :transition="{ duration: 0.15 }"
+                        >
+                            {{ permissionsError() }}
+                        </motion.p>
+                    </AnimatePresence>
                 </fieldset>
             </form>
 

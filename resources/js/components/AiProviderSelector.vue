@@ -165,7 +165,7 @@ function formatPrice(pricePerToken: number | null): string | null {
 <template>
     <BaseCard
         variant="subtle"
-        class="grid items-end gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(12rem,0.7fr)_minmax(13rem,0.8fr)_minmax(16rem,1fr)_auto]"
+        class="grid items-end gap-4 @sm/card:grid-cols-2 @xl/card:grid-cols-[minmax(12rem,0.7fr)_minmax(13rem,0.8fr)_minmax(16rem,1fr)_auto]"
     >
         <BaseSelect
             v-model="selectedProvider"
@@ -184,7 +184,7 @@ function formatPrice(pricePerToken: number | null): string | null {
             :disabled="loadingModels"
         />
         <span
-            class="min-h-11 self-end py-3 text-xs font-medium text-ink-muted"
+            class="min-h-11 self-end py-3 text-step-eyebrow font-medium text-ink-muted"
             role="status"
             aria-live="polite"
         >

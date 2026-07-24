@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import { AnimatePresence, motion } from 'motion-v';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import AppIcon from '@/components/AppIcon.vue';
 import {
@@ -43,6 +44,12 @@ const toastVisible = ref(true);
 const errorToastVisible = ref(true);
 const infoToastVisible = ref(true);
 const dropdownMessage = ref('Ninguna acción seleccionada.');
+
+// :key fuerza el remount de MatchScore, que dispara de nuevo su animación de
+// conteo (motion-v) en el watch({ immediate: true }) — así "Repetir animación"
+// no necesita duplicar la lógica de animate() que ya vive en el componente.
+const motionReplayKey = ref(0);
+const revealPanelOpen = ref(false);
 
 const themeOptions: Array<{ value: ThemePreference; label: string }> = [
     { value: 'light', label: 'Claro' },
@@ -129,6 +136,54 @@ const scorePalette = [
         label: 'Bajo',
         range: '0–59',
         className: 'bg-score-low text-score-low-surface',
+    },
+];
+
+// Cada fila renderiza su propia utilidad text-step-*: son los mismos tokens
+// --step-* (clamp()) espejados en app.css para que Tailwind los genere.
+const typeScale = [
+    {
+        tag: 'Metric',
+        token: '--step-metric',
+        textClass: 'font-data text-step-metric font-semibold tracking-tight',
+        sample: '$128k',
+    },
+    {
+        tag: 'H1',
+        token: '--step-h1',
+        textClass: 'text-step-h1 font-semibold tracking-tight',
+        sample: 'Encuentra tu match',
+    },
+    {
+        tag: 'H2',
+        token: '--step-h2',
+        textClass: 'text-step-h2 font-semibold tracking-tight',
+        sample: 'Vacantes recomendadas',
+    },
+    {
+        tag: 'H3',
+        token: '--step-h3',
+        textClass: 'text-step-h3 font-semibold',
+        sample: 'Resumen del perfil',
+    },
+    {
+        tag: 'Lead',
+        token: '--step-lead',
+        textClass: 'text-step-lead text-ink-muted',
+        sample: 'Ordenadas por afinidad con tu perfil.',
+    },
+    {
+        tag: 'Body',
+        token: '--step-body',
+        textClass: 'text-step-body',
+        sample: 'El cuerpo base se mantiene legible de 320px a 4K sin tocar una media query.',
+    },
+    {
+        tag: 'Eyebrow',
+        token: '--step-eyebrow',
+        textClass:
+            'text-step-eyebrow font-semibold tracking-[0.08em] text-ink-subtle uppercase',
+        sample: 'Filtros activos',
     },
 ];
 
@@ -228,13 +283,16 @@ function onDropdownSelect(item: DropdownActionItem): void {
             <a
                 v-for="item in [
                     ['tokens', 'Tokens'],
+                    ['type-scale', 'Tipografía'],
                     ['score', 'Score'],
                     ['actions', 'Acciones'],
                     ['forms', 'Formularios'],
                     ['surfaces', 'Superficies'],
+                    ['container-demo', 'Container queries'],
                     ['feedback', 'Feedback'],
                     ['navigation', 'Navegación'],
                     ['view-states', 'Estados de vista'],
+                    ['motion', 'Motion'],
                 ]"
                 :key="item[0]"
                 :href="`#${item[0]}`"
@@ -340,6 +398,50 @@ function onDropdownSelect(item: DropdownActionItem): void {
                         </dd>
                     </div>
                 </dl>
+            </div>
+        </section>
+
+        <section id="type-scale" class="grid gap-6 border-t border-line pt-10">
+            <div class="grid max-w-2xl gap-2">
+                <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
+                    Escala tipográfica fluida
+                </h2>
+                <p class="text-sm leading-6 text-ink-muted">
+                    Cada paso usa
+                    <code class="font-data text-xs text-primary">clamp()</code>
+                    para interpolar tamaño entre el viewport más chico y el
+                    más grande, sin saltos de breakpoint. Son las utilidades
+                    <code class="font-data text-xs text-primary"
+                        >text-step-*</code
+                    >, espejo de los tokens
+                    <code class="font-data text-xs text-primary">--step-*</code>
+                    en <code class="font-data text-xs text-primary"
+                        >app.css</code
+                    >. <b>Redimensiona la ventana</b> y observa cómo cada
+                    línea cambia de tamaño de forma continua, no a saltos.
+                </p>
+            </div>
+
+            <div
+                class="grid divide-y divide-line overflow-hidden rounded-panel border border-line bg-surface"
+            >
+                <div
+                    v-for="step in typeScale"
+                    :key="step.token"
+                    class="grid grid-cols-[minmax(5.5rem,auto)_1fr] items-baseline gap-4 px-4 py-4 sm:px-5"
+                >
+                    <span class="grid gap-0.5">
+                        <span class="text-xs font-semibold text-ink-subtle">
+                            {{ step.tag }}
+                        </span>
+                        <code class="font-data text-[0.6875rem] text-primary">
+                            {{ step.token }}
+                        </code>
+                    </span>
+                    <span :class="[step.textClass, 'min-w-0 truncate']">
+                        {{ step.sample }}
+                    </span>
+                </div>
             </div>
         </section>
 
@@ -617,6 +719,61 @@ function onDropdownSelect(item: DropdownActionItem): void {
             </BaseCard>
         </section>
 
+        <section id="container-demo" class="grid gap-6 border-t border-line pt-10">
+            <div class="grid max-w-2xl gap-2">
+                <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
+                    La tarjeta se adapta a su espacio, no al viewport
+                </h2>
+                <p class="text-sm leading-6 text-ink-muted">
+                    Con <code class="font-data text-xs text-primary"
+                        >@container</code
+                    >
+                    la misma tarjeta se apila en una columna angosta y pasa a
+                    fila cuando su propio contenedor crece, aunque el
+                    viewport no cambie. Así funciona en el sidebar, un panel
+                    o una lista sin duplicar el componente.
+                </p>
+            </div>
+
+            <div
+                class="@container/jobcard w-80 max-w-full resize-x overflow-auto rounded-panel border border-dashed border-line-strong bg-surface-subtle p-4"
+                style="min-width: 14rem; max-width: 34rem"
+            >
+                <p
+                    class="mb-3 flex items-center gap-1.5 font-data text-xs text-ink-subtle"
+                >
+                    <AppIcon name="expand" class="h-3.5 w-3.5" />
+                    Arrastra la esquina inferior derecha para redimensionar el
+                    contenedor
+                </p>
+                <article
+                    class="grid gap-3 rounded-card border border-line bg-surface p-4 shadow-card @sm/jobcard:grid-cols-[1fr_auto] @sm/jobcard:items-center"
+                >
+                    <div class="min-w-0">
+                        <p class="font-semibold text-ink">
+                            Senior Product Designer
+                        </p>
+                        <p class="text-sm text-ink-muted">
+                            Nubank · Remoto · LatAm
+                        </p>
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                            <BaseTag>Figma</BaseTag>
+                            <BaseTag>Design systems</BaseTag>
+                            <BaseTag>B2C</BaseTag>
+                        </div>
+                    </div>
+                    <div
+                        class="flex items-center justify-between gap-3 @sm/jobcard:flex-col @sm/jobcard:items-end @sm/jobcard:justify-center"
+                    >
+                        <MatchScore :score="92" size="compact" :animate="false" />
+                        <BaseButton size="sm" variant="quiet">
+                            Guardar
+                        </BaseButton>
+                    </div>
+                </article>
+            </div>
+        </section>
+
         <section id="feedback" class="grid gap-6 border-t border-line pt-10">
             <div class="grid max-w-2xl gap-2">
                 <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
@@ -800,6 +957,136 @@ function onDropdownSelect(item: DropdownActionItem): void {
                     </BaseCard>
                 </div>
             </BaseTabs>
+        </section>
+
+        <section id="motion" class="grid gap-6 border-t border-line pt-10">
+            <div class="grid max-w-2xl gap-2">
+                <h2 class="text-2xl font-semibold tracking-[-0.03em] text-ink">
+                    Movimiento con intención
+                </h2>
+                <p class="text-sm leading-6 text-ink-muted">
+                    Toda la app está envuelta en
+                    <code class="font-data text-xs text-primary"
+                        >&lt;MotionConfig reducedMotion="user"&gt;</code
+                    >
+                    (<code class="font-data text-xs text-primary"
+                        >resources/js/app.ts</code
+                    >): cualquier
+                    <code class="font-data text-xs text-primary">motion.*</code>
+                    o
+                    <code class="font-data text-xs text-primary"
+                        >AnimatePresence</code
+                    >
+                    hereda el respeto por
+                    <code class="font-data text-xs text-primary"
+                        >prefers-reduced-motion</code
+                    >
+                    sin código adicional por componente.
+                </p>
+            </div>
+
+            <div class="grid gap-5 lg:grid-cols-3">
+                <div class="grid content-start gap-3 rounded-panel border border-line bg-surface p-5">
+                    <h3 class="text-sm font-semibold text-ink">
+                        Score animado
+                    </h3>
+                    <p class="text-xs leading-5 text-ink-muted">
+                        <code class="font-data text-[0.6875rem] text-primary"
+                            >MatchScore</code
+                        >
+                        dibuja el arco y cuenta hasta el valor con
+                        <code class="font-data text-[0.6875rem] text-primary"
+                            >animate()</code
+                        >
+                        de motion-v: confirma que el número se calculó, no
+                        que se puso.
+                    </p>
+                    <div class="mt-2 flex items-center gap-4">
+                        <MatchScore
+                            :key="motionReplayKey"
+                            :score="87"
+                            size="card"
+                        />
+                        <BaseButton
+                            size="sm"
+                            variant="secondary"
+                            @click="motionReplayKey++"
+                        >
+                            Repetir animación
+                        </BaseButton>
+                    </div>
+                </div>
+
+                <div class="grid content-start gap-3 rounded-panel border border-line bg-surface p-5">
+                    <h3 class="text-sm font-semibold text-ink">
+                        Gesto hover / press
+                    </h3>
+                    <p class="text-xs leading-5 text-ink-muted">
+                        <code class="font-data text-[0.6875rem] text-primary"
+                            >motion.div</code
+                        >
+                        con
+                        <code class="font-data text-[0.6875rem] text-primary"
+                            >whileHover</code
+                        >
+                        /
+                        <code class="font-data text-[0.6875rem] text-primary"
+                            >whilePress</code
+                        >: un gesto declarativo, sin listeners manuales.
+                    </p>
+                    <motion.div
+                        class="mt-2 grid h-20 cursor-pointer place-content-center rounded-card border border-line bg-primary-subtle text-sm font-semibold text-primary select-none"
+                        :while-hover="{ scale: 1.03 }"
+                        :while-press="{ scale: 0.97 }"
+                        :transition="{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }"
+                        tabindex="0"
+                    >
+                        Prueba el gesto
+                    </motion.div>
+                </div>
+
+                <div class="grid content-start gap-3 rounded-panel border border-line bg-surface p-5">
+                    <h3 class="text-sm font-semibold text-ink">
+                        Entrada y salida
+                    </h3>
+                    <p class="text-xs leading-5 text-ink-muted">
+                        <code class="font-data text-[0.6875rem] text-primary"
+                            >AnimatePresence</code
+                        >
+                        anima también la salida — el mismo patrón que usa el
+                        toast global en
+                        <code class="font-data text-[0.6875rem] text-primary"
+                            >ToastContainer.vue</code
+                        >.
+                    </p>
+                    <BaseButton
+                        size="sm"
+                        variant="secondary"
+                        class="mt-2 justify-self-start"
+                        :aria-expanded="revealPanelOpen"
+                        aria-controls="motion-reveal-panel"
+                        @click="revealPanelOpen = !revealPanelOpen"
+                    >
+                        {{ revealPanelOpen ? 'Ocultar panel' : 'Mostrar panel' }}
+                    </BaseButton>
+                    <AnimatePresence>
+                        <motion.div
+                            v-if="revealPanelOpen"
+                            id="motion-reveal-panel"
+                            :initial="{ opacity: 0, y: 10, scale: 0.98 }"
+                            :animate="{ opacity: 1, y: 0, scale: 1 }"
+                            :exit="{ opacity: 0, scale: 0.98 }"
+                            :transition="{
+                                duration: 0.2,
+                                ease: [0.16, 1, 0.3, 1],
+                            }"
+                            class="rounded-control border border-line bg-surface-subtle px-3 py-2 text-xs text-ink-muted"
+                        >
+                            Este panel entra y sale con motion-v.
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            </div>
         </section>
 
         <BaseDrawer

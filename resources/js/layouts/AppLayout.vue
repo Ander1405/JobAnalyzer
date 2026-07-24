@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AnimatePresence, motion } from 'motion-v';
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppIcon from '@/components/AppIcon.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
@@ -109,14 +110,20 @@ function onMobileKeydown(event: KeyboardEvent): void {
             Ir al contenido
         </a>
 
-        <button
-            v-if="mobileOpen"
-            type="button"
-            tabindex="-1"
-            aria-label="Cerrar navegación"
-            class="fixed inset-0 z-40 bg-black/30 lg:hidden"
-            @click="closeMobileNavigation"
-        />
+        <AnimatePresence>
+            <motion.button
+                v-if="mobileOpen"
+                type="button"
+                tabindex="-1"
+                aria-label="Cerrar navegación"
+                :initial="{ opacity: 0 }"
+                :animate="{ opacity: 1 }"
+                :exit="{ opacity: 0 }"
+                :transition="{ duration: 0.18 }"
+                class="fixed inset-0 z-40 bg-black/30 lg:hidden"
+                @click="closeMobileNavigation"
+            />
+        </AnimatePresence>
 
         <aside
             class="hidden border-r border-slate-800 bg-signal-950 lg:sticky lg:top-0 lg:block lg:h-screen"
@@ -129,28 +136,36 @@ function onMobileKeydown(event: KeyboardEvent): void {
             />
         </aside>
 
-        <aside
-            v-if="mobileOpen"
-            id="mobile-navigation"
-            ref="mobilePanel"
-            class="fixed inset-y-0 left-0 z-50 w-64 border-r border-slate-800 bg-signal-950 shadow-raised lg:hidden"
-        >
-            <button
-                ref="mobileClose"
-                type="button"
-                class="absolute top-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-control text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-200"
-                aria-label="Cerrar navegación"
-                @click="closeMobileNavigation"
+        <!-- El panel carga el ref que usa el focus-trap (mobileFocusableElements),
+             así que se anima con <Transition> + CSS, no motion-v: ver la nota en
+             BaseDropdown.vue sobre por qué motion.div no es seguro aquí. El
+             backdrop de arriba sí es motion-v porque no tiene ref. -->
+        <Transition name="mobile-nav">
+            <aside
+                v-if="mobileOpen"
+                id="mobile-navigation"
+                ref="mobilePanel"
+                class="fixed inset-y-0 left-0 z-50 w-64 border-r border-slate-800 bg-signal-950 shadow-raised lg:hidden"
             >
-                <span aria-hidden="true" class="text-xl leading-none">×</span>
-            </button>
-            <AppSidebar
-                :collapsed="false"
-                :badges="badges"
-                @toggle-collapsed="collapsed = !collapsed"
-                @navigate="closeMobileNavigation"
-            />
-        </aside>
+                <button
+                    ref="mobileClose"
+                    type="button"
+                    class="absolute top-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-control text-slate-300 hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-200"
+                    aria-label="Cerrar navegación"
+                    @click="closeMobileNavigation"
+                >
+                    <span aria-hidden="true" class="text-xl leading-none"
+                        >×</span
+                    >
+                </button>
+                <AppSidebar
+                    :collapsed="false"
+                    :badges="badges"
+                    @toggle-collapsed="collapsed = !collapsed"
+                    @navigate="closeMobileNavigation"
+                />
+            </aside>
+        </Transition>
 
         <div class="flex min-h-screen min-w-0 flex-1 flex-col">
             <header
@@ -172,10 +187,13 @@ function onMobileKeydown(event: KeyboardEvent): void {
                 >
             </header>
 
+            <!-- @container/content: convención para toda la app — las vistas
+                 hijas usan @sm/content:, @lg/content:, etc. sin declarar su
+                 propio @container ni duplicar breakpoints de viewport. -->
             <main
                 id="main-content"
                 tabindex="-1"
-                class="min-w-0 flex-1 p-4 sm:p-6 lg:p-8"
+                class="@container/content min-w-0 flex-1 p-4 sm:p-6 lg:p-8"
             >
                 <slot />
             </main>
@@ -184,3 +202,15 @@ function onMobileKeydown(event: KeyboardEvent): void {
         <ToastContainer />
     </div>
 </template>
+
+<style scoped>
+.mobile-nav-enter-active,
+.mobile-nav-leave-active {
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-nav-enter-from,
+.mobile-nav-leave-to {
+    transform: translateX(-100%);
+}
+</style>

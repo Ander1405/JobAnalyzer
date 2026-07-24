@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
+import { motion } from 'motion-v';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AiProviderSelector from '@/components/AiProviderSelector.vue';
@@ -578,7 +579,7 @@ async function bulkTrack() {
                 >
                     <div class="max-w-xl">
                         <p
-                            class="mb-3 inline-flex items-center gap-2 rounded-full bg-primary-subtle px-2.5 py-1 text-[0.6875rem] font-semibold tracking-[0.12em] text-primary uppercase"
+                            class="text-step-eyebrow mb-3 inline-flex items-center gap-2 rounded-full bg-primary-subtle px-2.5 py-1 font-semibold tracking-[0.12em] text-primary uppercase"
                         >
                             <span
                                 class="inline-block h-1.5 w-1.5 rounded-full bg-primary"
@@ -586,11 +587,11 @@ async function bulkTrack() {
                             Panel de decisión
                         </p>
                         <h1
-                            class="text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl"
+                            class="text-step-h1 font-semibold tracking-[-0.04em] text-ink"
                         >
                             Marketplace
                         </h1>
-                        <p class="mt-2 text-sm text-ink-muted">
+                        <p class="text-step-body mt-2 text-ink-muted">
                             <template v-if="meta">
                                 <span
                                     class="font-data font-semibold text-ink tabular-nums"
@@ -773,14 +774,11 @@ async function bulkTrack() {
             </BaseButton>
         </BaseCard>
 
-        <div
-            class="mb-4 transition-all duration-500 ease-signal-out"
-            :class="
-                entered
-                    ? 'translate-y-0 opacity-100'
-                    : 'translate-y-3 opacity-0'
-            "
-            :style="{ transitionDelay: entered ? '140ms' : '0ms' }"
+        <motion.div
+            class="mb-4"
+            :initial="{ opacity: 0, y: 12 }"
+            :animate="{ opacity: 1, y: 0 }"
+            :transition="{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.14 }"
         >
             <MarketplaceFilters
                 v-model:filters="filters"
@@ -792,7 +790,7 @@ async function bulkTrack() {
                 @search-new="searchNew"
                 @analyze-pending="analyzePending"
             />
-        </div>
+        </motion.div>
 
         <BaseCard
             v-if="selectedIds.size > 0"
@@ -823,7 +821,7 @@ async function bulkTrack() {
         <div v-if="viewMode === 'grid'" class="flex flex-col gap-4">
             <div
                 v-if="loading"
-                class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                class="grid grid-cols-1 gap-3 @sm/content:grid-cols-2 @lg/content:grid-cols-3"
             >
                 <div
                     v-for="n in 6"
@@ -863,7 +861,7 @@ async function bulkTrack() {
                 v-else
                 tag="div"
                 name="jobcard"
-                class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                class="grid grid-cols-1 gap-3 @sm/content:grid-cols-2 @lg/content:grid-cols-3"
             >
                 <div
                     v-for="(job, index) in jobs"

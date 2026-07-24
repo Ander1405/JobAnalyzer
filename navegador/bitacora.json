@@ -1,0 +1,16 @@
+[
+  {
+    "hora": "2026-07-24 10:49",
+    "url": "http://job-analyzer.test/marketplace",
+    "titulo": "Iniciar sesión - Laravel",
+    "captura": "marketplace-login-wall.png",
+    "resumen": "Al abrir /marketplace la app redirige a /login: la sesión del navegador no está autenticada, así que no se pudo capturar la landing real. Hace falta que el usuario inicie sesión para ver el marketplace en vivo y validar visualmente las mejoras."
+  },
+  {
+    "hora": "2026-07-24 11:40",
+    "url": "http://127.0.0.1:8791/index.html",
+    "titulo": "Job Hunter · Sistema visual v1 (mock)",
+    "captura": "sistema-visual-claro.png",
+    "resumen": "Verificación del mock del nuevo lenguaje visual (mockups/sistema-visual/v1). Confirmado en claro y oscuro: dial de match-score animado (count-up a 92 + arco), escala tipográfica fluida con clamp(), JobCards que reflow por @container (celda de tabla pasa a modo tarjeta bajo 620px de contenedor, no de viewport), botones/inputs con estados y foco, kanban con botones de mover, toast. Base para aprobar el lenguaje antes de aplicarlo por la vía A."
+  }
+]

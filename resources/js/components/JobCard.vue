@@ -55,57 +55,75 @@ const postedAgo = computed(() =>
             )
         "
     >
-        <div class="flex items-start justify-between gap-3">
-            <div class="flex items-start gap-3">
-                <input
-                    type="checkbox"
-                    class="mt-3 h-4 w-4 accent-primary"
-                    :checked="selected"
-                    :aria-label="`Seleccionar ${job.title} para una acción masiva`"
-                    @click.stop="emit('toggle-select')"
-                />
-                <CompanyLogo :company="job.company" :src="job.company_logo" />
+        <!-- @container/card (declarado por BaseCard): en un contenedor ancho
+             el cuerpo va a la izquierda y el score+acción a la derecha en
+             fila; en uno angosto (sidebar, columna única) se apilan. Así la
+             MISMA JobCard sirve en el grid de 3 columnas y en una lista
+             estrecha sin duplicar componente — ver mockup "04 · Responsive
+             por contenedor". -->
+        <div
+            class="flex flex-1 flex-col gap-4 @sm/card:flex-row @sm/card:items-start @sm/card:justify-between @sm/card:gap-5"
+        >
+            <div class="flex min-w-0 flex-1 flex-col gap-3">
+                <div class="flex items-start gap-3">
+                    <input
+                        type="checkbox"
+                        class="mt-3 h-4 w-4 accent-primary"
+                        :checked="selected"
+                        :aria-label="`Seleccionar ${job.title} para una acción masiva`"
+                        @click.stop="emit('toggle-select')"
+                    />
+                    <CompanyLogo
+                        :company="job.company"
+                        :src="job.company_logo"
+                    />
+                </div>
+
+                <button
+                    type="button"
+                    class="rounded-control text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                    @click="emit('open')"
+                >
+                    <h3 class="font-semibold tracking-[-0.02em] text-ink">
+                        {{ job.title }}
+                    </h3>
+                    <p class="mt-1 text-sm text-ink-muted">
+                        {{ job.company }}
+                    </p>
+                </button>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <BaseTag v-if="job.location">{{ job.location }}</BaseTag>
+                    <BaseTag v-if="modalidad">{{ modalidad }}</BaseTag>
+                </div>
             </div>
 
-            <BaseButton
-                size="icon"
-                variant="quiet"
-                :disabled="tracking || !!job.tracked_job"
-                :loading="tracking"
-                loading-label="Agregando a Mis vacantes"
-                :aria-label="
-                    job.tracked_job
-                        ? `${job.title} ya está en Mis vacantes`
-                        : `Agregar ${job.title} a Mis vacantes`
-                "
-                :title="
-                    job.tracked_job
-                        ? 'Ya está en mis vacantes'
-                        : 'Agregar a mis vacantes'
-                "
-                @click.stop="emit('quick-track')"
+            <div
+                class="flex items-center justify-between gap-3 border-t border-line pt-3 @sm/card:flex-col @sm/card:items-end @sm/card:justify-start @sm/card:gap-3 @sm/card:border-t-0 @sm/card:pt-0"
             >
-                <AppIcon name="tracking" class="h-5 w-5" />
-            </BaseButton>
-        </div>
+                <MatchScore :score="matchScore" size="compact" />
 
-        <button
-            type="button"
-            class="rounded-control text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-            @click="emit('open')"
-        >
-            <h3 class="font-semibold tracking-[-0.02em] text-ink">
-                {{ job.title }}
-            </h3>
-            <p class="mt-1 text-sm text-ink-muted">
-                {{ job.company }}
-            </p>
-        </button>
-
-        <div class="flex flex-wrap items-center gap-2">
-            <MatchScore :score="matchScore" size="compact" />
-            <BaseTag v-if="job.location">{{ job.location }}</BaseTag>
-            <BaseTag v-if="modalidad">{{ modalidad }}</BaseTag>
+                <BaseButton
+                    size="icon"
+                    variant="quiet"
+                    :disabled="tracking || !!job.tracked_job"
+                    :loading="tracking"
+                    loading-label="Agregando a Mis vacantes"
+                    :aria-label="
+                        job.tracked_job
+                            ? `${job.title} ya está en Mis vacantes`
+                            : `Agregar ${job.title} a Mis vacantes`
+                    "
+                    :title="
+                        job.tracked_job
+                            ? 'Ya está en mis vacantes'
+                            : 'Agregar a mis vacantes'
+                    "
+                    @click.stop="emit('quick-track')"
+                >
+                    <AppIcon name="tracking" class="h-5 w-5" />
+                </BaseButton>
+            </div>
         </div>
 
         <div

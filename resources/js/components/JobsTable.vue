@@ -69,11 +69,18 @@ function statusTone(
 
 <template>
     <div class="flex flex-col gap-4">
+        <!-- @container/table: bajo un contenedor angosto (sidebar, tablet en
+             columna) la fila colapsa en tarjeta con etiquetas (td::before via
+             data-label) — mismas 8 columnas, sin perder ninguna y sin
+             depender de scroll lateral como única salida. Ver mockup
+             "05 · Tablas". -->
         <div
-            class="overflow-x-auto rounded-card border border-line bg-surface shadow-card"
+            class="@container/table rounded-card border border-line bg-surface shadow-card"
         >
-            <table class="w-full min-w-[900px] text-left text-sm">
-                <thead class="bg-surface-inverse text-ink-inverse">
+            <table class="w-full text-left text-sm @max-md/table:block">
+                <thead
+                    class="bg-surface-inverse text-ink-inverse @max-md/table:hidden"
+                >
                     <tr>
                         <th class="w-8 px-4 py-3"></th>
                         <th class="px-4 py-3 text-xs font-semibold">Empresa</th>
@@ -85,10 +92,20 @@ function statusTone(
                         <th class="px-4 py-3 text-xs font-semibold">Estado</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-line">
+                <tbody
+                    class="divide-y divide-line @max-md/table:block @max-md/table:divide-y-0"
+                >
                     <template v-if="loading">
-                        <tr v-for="n in 5" :key="n">
-                            <td v-for="col in 8" :key="col" class="px-4 py-3">
+                        <tr
+                            v-for="n in 5"
+                            :key="n"
+                            class="@max-md/table:mb-3 @max-md/table:block @max-md/table:rounded-card @max-md/table:border @max-md/table:border-line @max-md/table:p-3 @max-md/table:shadow-card @max-md/table:last:mb-0"
+                        >
+                            <td
+                                v-for="col in 8"
+                                :key="col"
+                                class="px-4 py-3 @max-md/table:block @max-md/table:px-0 @max-md/table:py-1.5"
+                            >
                                 <BaseSkeleton shape="text" class="w-full" />
                             </td>
                         </tr>
@@ -128,11 +145,16 @@ function statusTone(
                                 matchScore(job) !== null &&
                                     matchScore(job)! >= threshold &&
                                     'bg-success-surface/45',
+                                '@max-md/table:mb-3 @max-md/table:block @max-md/table:rounded-card @max-md/table:border @max-md/table:border-line @max-md/table:p-3 @max-md/table:shadow-card @max-md/table:last:mb-0',
                             )
                         "
                         @click="emit('select', job)"
                     >
-                        <td class="px-4 py-2" @click.stop>
+                        <td
+                            class="px-4 py-2 @max-md/table:flex @max-md/table:items-center @max-md/table:justify-between @max-md/table:px-0 @max-md/table:py-1.5"
+                            data-label="Seleccionar"
+                            @click.stop
+                        >
                             <input
                                 type="checkbox"
                                 :checked="selectedIds.includes(job.id)"
@@ -141,10 +163,16 @@ function statusTone(
                                 @click="emit('toggle-select', job)"
                             />
                         </td>
-                        <td class="px-4 py-3 font-semibold text-ink">
+                        <td
+                            class="px-4 py-3 font-semibold text-ink @max-md/table:flex @max-md/table:items-center @max-md/table:justify-between @max-md/table:px-0 @max-md/table:py-1.5 @max-md/table:before:text-xs @max-md/table:before:font-semibold @max-md/table:before:tracking-wide @max-md/table:before:text-ink-subtle @max-md/table:before:uppercase @max-md/table:before:content-[attr(data-label)]"
+                            data-label="Empresa"
+                        >
                             {{ job.company || '—' }}
                         </td>
-                        <td class="px-4 py-3 font-semibold text-ink">
+                        <td
+                            class="px-4 py-3 font-semibold text-ink @max-md/table:flex @max-md/table:items-center @max-md/table:justify-between @max-md/table:px-0 @max-md/table:py-1.5 @max-md/table:before:text-xs @max-md/table:before:font-semibold @max-md/table:before:tracking-wide @max-md/table:before:text-ink-subtle @max-md/table:before:uppercase @max-md/table:before:content-[attr(data-label)]"
+                            data-label="Cargo"
+                        >
                             <button
                                 type="button"
                                 class="rounded-control text-left hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
@@ -153,27 +181,42 @@ function statusTone(
                                 {{ job.title }}
                             </button>
                         </td>
-                        <td class="px-4 py-3 text-ink-muted">
+                        <td
+                            class="px-4 py-3 text-ink-muted @max-md/table:flex @max-md/table:items-center @max-md/table:justify-between @max-md/table:px-0 @max-md/table:py-1.5 @max-md/table:before:text-xs @max-md/table:before:font-semibold @max-md/table:before:tracking-wide @max-md/table:before:text-ink-subtle @max-md/table:before:uppercase @max-md/table:before:content-[attr(data-label)]"
+                            data-label="Fuente"
+                        >
                             {{ job.source }}
                         </td>
-                        <td class="px-4 py-3">
+                        <td
+                            class="px-4 py-3 @max-md/table:flex @max-md/table:items-center @max-md/table:justify-between @max-md/table:px-0 @max-md/table:py-1.5 @max-md/table:before:text-xs @max-md/table:before:font-semibold @max-md/table:before:tracking-wide @max-md/table:before:text-ink-subtle @max-md/table:before:uppercase @max-md/table:before:content-[attr(data-label)]"
+                            data-label="Match %"
+                        >
                             <MatchScore
                                 :score="matchScore(job)"
                                 size="compact"
                                 :animate="false"
                             />
                         </td>
-                        <td class="px-4 py-3 text-ink-muted">
+                        <td
+                            class="px-4 py-3 text-ink-muted @max-md/table:flex @max-md/table:items-center @max-md/table:justify-between @max-md/table:px-0 @max-md/table:py-1.5 @max-md/table:before:text-xs @max-md/table:before:font-semibold @max-md/table:before:tracking-wide @max-md/table:before:text-ink-subtle @max-md/table:before:uppercase @max-md/table:before:content-[attr(data-label)]"
+                            data-label="Salario"
+                        >
                             {{
                                 job.ai_analysis?.salario_normalizado ??
                                 job.salary_raw ??
                                 'No especificado'
                             }}
                         </td>
-                        <td class="px-4 py-3 text-ink-muted">
+                        <td
+                            class="px-4 py-3 text-ink-muted @max-md/table:flex @max-md/table:items-center @max-md/table:justify-between @max-md/table:px-0 @max-md/table:py-1.5 @max-md/table:before:text-xs @max-md/table:before:font-semibold @max-md/table:before:tracking-wide @max-md/table:before:text-ink-subtle @max-md/table:before:uppercase @max-md/table:before:content-[attr(data-label)]"
+                            data-label="Idioma"
+                        >
                             {{ job.ai_analysis?.idioma ?? '—' }}
                         </td>
-                        <td class="px-4 py-3">
+                        <td
+                            class="px-4 py-3 @max-md/table:flex @max-md/table:items-center @max-md/table:justify-between @max-md/table:px-0 @max-md/table:py-1.5 @max-md/table:before:text-xs @max-md/table:before:font-semibold @max-md/table:before:tracking-wide @max-md/table:before:text-ink-subtle @max-md/table:before:uppercase @max-md/table:before:content-[attr(data-label)]"
+                            data-label="Estado"
+                        >
                             <BaseTag :tone="statusTone(job.application_status)">
                                 {{ job.application_status }}
                             </BaseTag>

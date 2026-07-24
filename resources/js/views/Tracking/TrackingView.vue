@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { motion } from 'motion-v';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppIcon from '@/components/AppIcon.vue';
@@ -85,7 +86,7 @@ function onDragEnd() {
     activeDropStatus.value = null;
 }
 
-async function onDrop(status: TrackedJobStatus) {
+function onDrop(status: TrackedJobStatus) {
     const id = draggedId.value;
     draggedId.value = null;
     activeDropStatus.value = null;
@@ -98,10 +99,22 @@ async function onDrop(status: TrackedJobStatus) {
         (candidate) => candidate.id === id,
     );
 
-    if (!trackedJob || trackedJob.status === status) {
+    if (!trackedJob) {
         return;
     }
 
+    moveTo(trackedJob, status);
+}
+
+// Ruta única de cambio de estado: la llaman tanto el drop nativo (mejora
+// progresiva para mouse) como los botones ◀ / "Siguiente estado ▶", que son
+// la interacción primaria — HTML5 drag&drop no funciona en táctil ni teclado.
+async function moveTo(trackedJob: TrackedJob, status: TrackedJobStatus) {
+    if (trackedJob.status === status) {
+        return;
+    }
+
+    const id = trackedJob.id;
     movingId.value = id;
 
     try {
@@ -128,6 +141,20 @@ async function onDrop(status: TrackedJobStatus) {
     }
 }
 
+function previousStatus(status: TrackedJobStatus): TrackedJobStatus | null {
+    const index = TRACKED_JOB_STATUSES.indexOf(status);
+
+    return index <= 0 ? null : TRACKED_JOB_STATUSES[index - 1];
+}
+
+function nextStatus(status: TrackedJobStatus): TrackedJobStatus | null {
+    const index = TRACKED_JOB_STATUSES.indexOf(status);
+
+    return index === -1 || index === TRACKED_JOB_STATUSES.length - 1
+        ? null
+        : TRACKED_JOB_STATUSES[index + 1];
+}
+
 function statusTone(status: TrackedJobStatus): TagTone {
     return {
         sin_aplicar: 'neutral',
@@ -145,6 +172,13 @@ function priorityTone(priority: TrackedJobPriority): TagTone {
         baja: 'neutral',
     }[priority] as TagTone;
 }
+
+// La tabla vive dentro de un BaseCard, que ya declara @container/card. Bajo
+// ese contenedor angosto (no el viewport) cada <td> pasa de columna a fila
+// "etiqueta: valor" usando su atributo data-label, igual que el patrón
+// .jtable del mockup — sin scroll horizontal ni perder columnas.
+const responsiveCell =
+    '@max-[620px]/card:flex @max-[620px]/card:max-w-none @max-[620px]/card:items-start @max-[620px]/card:justify-between @max-[620px]/card:gap-4 @max-[620px]/card:border-0 @max-[620px]/card:px-3 @max-[620px]/card:py-1.5 @max-[620px]/card:before:mt-0.5 @max-[620px]/card:before:shrink-0 @max-[620px]/card:before:text-[0.6875rem] @max-[620px]/card:before:font-semibold @max-[620px]/card:before:tracking-wide @max-[620px]/card:before:text-ink-subtle @max-[620px]/card:before:uppercase @max-[620px]/card:before:content-[attr(data-label)]';
 
 function formatDate(value: string | null): string {
     if (!value) {
@@ -198,11 +232,13 @@ const overdueCount = computed(() => trackedJobs.value.filter(isOverdue).length);
         <header class="mb-5 border-b border-line pb-5">
             <div class="flex flex-wrap items-end justify-between gap-4">
                 <div class="min-w-0">
-                    <p class="mb-2 text-xs font-semibold text-primary">
+                    <p
+                        class="mb-2 text-step-eyebrow font-semibold text-primary"
+                    >
                         SEGUIMIENTO DE APLICACIONES
                     </p>
                     <h1
-                        class="text-3xl font-semibold tracking-[-0.04em] text-balance text-ink"
+                        class="text-step-h1 font-semibold tracking-[-0.04em] text-balance text-ink"
                     >
                         Mis vacantes
                     </h1>
@@ -358,7 +394,8 @@ const overdueCount = computed(() => trackedJobs.value.filter(isOverdue).length);
             aria-label="Tablero de seguimiento por estado"
         >
             <p id="tracking-drag-instructions" class="sr-only">
-                Arrastra una vacante a otra columna para cambiar su estado.
+                Arrastra una vacante a otra columna para cambiar su estado, o
+                usa los botones ◀ y de siguiente estado en cada tarjeta.
             </p>
 
             <BaseCard
@@ -391,106 +428,172 @@ const overdueCount = computed(() => trackedJobs.value.filter(isOverdue).length);
                     </span>
                 </div>
 
-                <div class="flex flex-col gap-3">
-                    <button
+                <!-- layout en el contenedor de la lista (no en la tarjeta
+                     arrastrable): motion-v anima el reflow de la columna
+                     cuando una tarjeta entra o sale sin envolver el nodo que
+                     lleva draggable, que necesita seguir siendo un elemento
+                     nativo para el drag&drop HTML5. -->
+                <motion.div layout class="flex flex-col gap-3">
+                    <article
                         v-for="trackedJob in columnFor(status)"
                         :key="trackedJob.id"
-                        type="button"
                         :class="
                             cn(
-                                'w-full cursor-grab rounded-card border border-line bg-surface p-3 text-left shadow-card transition-[border-color,box-shadow,opacity,transform] duration-150 hover:-translate-y-0.5 hover:border-primary hover:shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus active:cursor-grabbing',
+                                'w-full cursor-grab rounded-card border border-line bg-surface shadow-card transition-[border-color,box-shadow,opacity] duration-150 hover:border-primary hover:shadow-raised active:cursor-grabbing',
                                 draggedId === trackedJob.id &&
                                     'border-primary opacity-60',
                                 movingId === trackedJob.id && 'opacity-50',
                             )
                         "
                         draggable="true"
-                        :aria-describedby="'tracking-drag-instructions'"
-                        :aria-label="`${trackedJob.job?.title ?? 'Vacante'} en ${trackedJob.job?.company ?? 'empresa sin identificar'}`"
                         @dragstart="onDragStart(trackedJob, $event)"
                         @dragend="onDragEnd"
-                        @click="openDetail(trackedJob)"
                     >
-                        <div class="flex min-w-0 items-start gap-3">
-                            <CompanyLogo
-                                :company="trackedJob.job?.company ?? 'Empresa'"
-                                :src="trackedJob.job?.company_logo"
-                                size="sm"
-                            />
-                            <div class="min-w-0 flex-1">
-                                <p
-                                    class="line-clamp-2 text-sm font-semibold text-ink"
+                        <button
+                            type="button"
+                            class="w-full p-3 text-left focus-visible:rounded-t-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                            :aria-describedby="'tracking-drag-instructions'"
+                            :aria-label="`${trackedJob.job?.title ?? 'Vacante'} en ${trackedJob.job?.company ?? 'empresa sin identificar'}`"
+                            @click="openDetail(trackedJob)"
+                        >
+                            <div class="flex min-w-0 items-start gap-3">
+                                <CompanyLogo
+                                    :company="
+                                        trackedJob.job?.company ?? 'Empresa'
+                                    "
+                                    :src="trackedJob.job?.company_logo"
+                                    size="sm"
+                                />
+                                <div class="min-w-0 flex-1">
+                                    <p
+                                        class="line-clamp-2 text-sm font-semibold text-ink"
+                                    >
+                                        {{ trackedJob.job?.title ?? '—' }}
+                                    </p>
+                                    <p
+                                        class="mt-0.5 truncate text-xs text-ink-muted"
+                                    >
+                                        {{ trackedJob.job?.company ?? '—' }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 flex flex-wrap items-center gap-2">
+                                <BaseTag
+                                    v-if="trackedJob.priority"
+                                    :tone="priorityTone(trackedJob.priority)"
                                 >
-                                    {{ trackedJob.job?.title ?? '—' }}
+                                    Prioridad
+                                    {{
+                                        TRACKED_JOB_PRIORITY_LABELS[
+                                            trackedJob.priority
+                                        ]
+                                    }}
+                                </BaseTag>
+                                <MatchScore
+                                    v-if="trackedJob.job?.ai_analysis"
+                                    :score="
+                                        trackedJob.job.ai_analysis.match_score
+                                    "
+                                    size="compact"
+                                    :animate="false"
+                                />
+                            </div>
+
+                            <div
+                                v-if="trackedJob.next_action"
+                                class="mt-3 border-t border-line pt-3"
+                            >
+                                <p
+                                    class="text-[0.6875rem] font-medium text-ink-subtle"
+                                >
+                                    Próxima acción
                                 </p>
                                 <p
-                                    class="mt-0.5 truncate text-xs text-ink-muted"
+                                    class="mt-1 line-clamp-2 text-xs leading-5 text-ink"
                                 >
-                                    {{ trackedJob.job?.company ?? '—' }}
+                                    {{ trackedJob.next_action }}
+                                </p>
+                                <p
+                                    v-if="trackedJob.next_action_date"
+                                    :class="
+                                        cn(
+                                            'mt-1 font-data text-[0.6875rem] text-ink-muted tabular-nums',
+                                            isOverdue(trackedJob) &&
+                                                'font-semibold text-error',
+                                        )
+                                    "
+                                >
+                                    {{
+                                        formatDate(trackedJob.next_action_date)
+                                    }}
+                                    <span v-if="isOverdue(trackedJob)"
+                                        >· Vencida</span
+                                    >
                                 </p>
                             </div>
-                        </div>
+                        </button>
 
-                        <div class="mt-3 flex flex-wrap items-center gap-2">
-                            <BaseTag
-                                v-if="trackedJob.priority"
-                                :tone="priorityTone(trackedJob.priority)"
-                            >
-                                Prioridad
-                                {{
-                                    TRACKED_JOB_PRIORITY_LABELS[
-                                        trackedJob.priority
-                                    ]
-                                }}
-                            </BaseTag>
-                            <MatchScore
-                                v-if="trackedJob.job?.ai_analysis"
-                                :score="trackedJob.job.ai_analysis.match_score"
-                                size="compact"
-                                :animate="false"
-                            />
-                        </div>
-
+                        <!-- Interacción primaria: mueve la vacante de estado
+                             sin depender de mouse ni de drag&drop. Siempre
+                             visibles (no solo al hover) y operables por
+                             teclado. -->
                         <div
-                            v-if="trackedJob.next_action"
-                            class="mt-3 border-t border-line pt-3"
+                            class="flex items-center gap-2 border-t border-line p-3 pt-2.5"
                         >
-                            <p
-                                class="text-[0.6875rem] font-medium text-ink-subtle"
-                            >
-                                Próxima acción
-                            </p>
-                            <p
-                                class="mt-1 line-clamp-2 text-xs leading-5 text-ink"
-                            >
-                                {{ trackedJob.next_action }}
-                            </p>
-                            <p
-                                v-if="trackedJob.next_action_date"
-                                :class="
-                                    cn(
-                                        'mt-1 font-data text-[0.6875rem] text-ink-muted tabular-nums',
-                                        isOverdue(trackedJob) &&
-                                            'font-semibold text-error',
+                            <BaseButton
+                                v-if="previousStatus(trackedJob.status)"
+                                size="sm"
+                                variant="quiet"
+                                :disabled="movingId === trackedJob.id"
+                                :aria-label="`Mover a ${TRACKED_JOB_STATUS_LABELS[previousStatus(trackedJob.status)!]}`"
+                                @click="
+                                    moveTo(
+                                        trackedJob,
+                                        previousStatus(trackedJob.status)!,
                                     )
                                 "
                             >
-                                {{ formatDate(trackedJob.next_action_date) }}
-                                <span v-if="isOverdue(trackedJob)"
-                                    >· Vencida</span
-                                >
-                            </p>
+                                ◀
+                            </BaseButton>
+                            <BaseButton
+                                v-if="nextStatus(trackedJob.status)"
+                                size="sm"
+                                variant="secondary"
+                                class="flex-1"
+                                :disabled="movingId === trackedJob.id"
+                                :aria-label="`Mover a ${TRACKED_JOB_STATUS_LABELS[nextStatus(trackedJob.status)!]}`"
+                                @click="
+                                    moveTo(
+                                        trackedJob,
+                                        nextStatus(trackedJob.status)!,
+                                    )
+                                "
+                            >
+                                {{
+                                    TRACKED_JOB_STATUS_LABELS[
+                                        nextStatus(trackedJob.status)!
+                                    ]
+                                }}
+                                ▶
+                            </BaseButton>
                         </div>
-                    </button>
-                </div>
+                    </article>
+                </motion.div>
             </BaseCard>
         </section>
 
+        <!-- BaseCard ya declara @container/card en su nodo raíz (ver
+             BaseCard.vue): la tabla colapsa en tarjetas legibles bajo un
+             ancho de SU contenedor, no del viewport, igual que .jtable en el
+             mockup — sin overflow-x-auto obligatorio en pantallas angostas. -->
         <BaseCard v-else :padded="false" class="overflow-hidden">
             <div class="overflow-x-auto overscroll-x-contain">
-                <table class="w-full min-w-[960px] text-left text-sm">
+                <table
+                    class="w-full min-w-[960px] text-left text-sm @max-[620px]/card:min-w-0"
+                >
                     <thead
-                        class="border-b border-line bg-surface-subtle text-ink-muted"
+                        class="border-b border-line bg-surface-subtle text-ink-muted @max-[620px]/card:hidden"
                     >
                         <tr>
                             <th class="px-4 py-3 font-semibold">Empresa</th>
@@ -506,14 +609,19 @@ const overdueCount = computed(() => trackedJobs.value.filter(isOverdue).length);
                             </th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-line">
+                    <tbody
+                        class="divide-y divide-line @max-[620px]/card:block @max-[620px]/card:divide-y-0"
+                    >
                         <tr
                             v-for="trackedJob in trackedJobs"
                             :key="trackedJob.id"
-                            class="cursor-pointer bg-surface text-ink transition-[background-color] duration-150 hover:bg-surface-subtle"
+                            class="cursor-pointer bg-surface text-ink transition-[background-color] duration-150 hover:bg-surface-subtle @max-[620px]/card:mb-3 @max-[620px]/card:block @max-[620px]/card:rounded-card @max-[620px]/card:border @max-[620px]/card:border-line @max-[620px]/card:py-1 @max-[620px]/card:shadow-card @max-[620px]/card:last:mb-0"
                             @click="openDetail(trackedJob)"
                         >
-                            <td class="px-4 py-3">
+                            <td
+                                data-label="Empresa"
+                                :class="cn('px-4 py-3', responsiveCell)"
+                            >
                                 <div class="flex min-w-0 items-center gap-3">
                                     <CompanyLogo
                                         :company="
@@ -522,12 +630,19 @@ const overdueCount = computed(() => trackedJobs.value.filter(isOverdue).length);
                                         :src="trackedJob.job?.company_logo"
                                         size="sm"
                                     />
-                                    <span class="max-w-40 truncate font-medium">
+                                    <span
+                                        class="max-w-40 truncate font-medium @max-[620px]/card:max-w-none"
+                                    >
                                         {{ trackedJob.job?.company ?? '—' }}
                                     </span>
                                 </div>
                             </td>
-                            <td class="max-w-64 px-4 py-3">
+                            <td
+                                data-label="Cargo"
+                                :class="
+                                    cn('max-w-64 px-4 py-3', responsiveCell)
+                                "
+                            >
                                 <button
                                     type="button"
                                     class="line-clamp-2 text-left font-semibold text-ink hover:text-primary focus-visible:rounded-control focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
@@ -537,7 +652,10 @@ const overdueCount = computed(() => trackedJobs.value.filter(isOverdue).length);
                                     {{ trackedJob.job?.title ?? '—' }}
                                 </button>
                             </td>
-                            <td class="px-4 py-3">
+                            <td
+                                data-label="Estado"
+                                :class="cn('px-4 py-3', responsiveCell)"
+                            >
                                 <BaseTag :tone="statusTone(trackedJob.status)">
                                     {{
                                         TRACKED_JOB_STATUS_LABELS[
@@ -546,7 +664,10 @@ const overdueCount = computed(() => trackedJobs.value.filter(isOverdue).length);
                                     }}
                                 </BaseTag>
                             </td>
-                            <td class="px-4 py-3">
+                            <td
+                                data-label="Prioridad"
+                                :class="cn('px-4 py-3', responsiveCell)"
+                            >
                                 <BaseTag
                                     v-if="trackedJob.priority"
                                     :tone="priorityTone(trackedJob.priority)"
@@ -560,19 +681,32 @@ const overdueCount = computed(() => trackedJobs.value.filter(isOverdue).length);
                                 <span v-else class="text-ink-subtle">—</span>
                             </td>
                             <td
-                                class="px-4 py-3 font-data text-xs text-ink-muted tabular-nums"
+                                data-label="Postulación"
+                                :class="
+                                    cn(
+                                        'px-4 py-3 font-data text-xs text-ink-muted tabular-nums',
+                                        responsiveCell,
+                                    )
+                                "
                             >
                                 {{ formatDate(trackedJob.applied_at) }}
                             </td>
-                            <td class="max-w-56 px-4 py-3">
-                                <p class="truncate text-ink">
+                            <td
+                                data-label="Próxima acción"
+                                :class="
+                                    cn('max-w-56 px-4 py-3', responsiveCell)
+                                "
+                            >
+                                <p
+                                    class="truncate text-ink @max-[620px]/card:max-w-none @max-[620px]/card:text-right"
+                                >
                                     {{ trackedJob.next_action ?? '—' }}
                                 </p>
                                 <p
                                     v-if="trackedJob.next_action_date"
                                     :class="
                                         cn(
-                                            'mt-1 font-data text-xs text-ink-muted tabular-nums',
+                                            'mt-1 font-data text-xs text-ink-muted tabular-nums @max-[620px]/card:text-right',
                                             isOverdue(trackedJob) &&
                                                 'font-semibold text-error',
                                         )
@@ -583,8 +717,18 @@ const overdueCount = computed(() => trackedJobs.value.filter(isOverdue).length);
                                     }}
                                 </p>
                             </td>
-                            <td class="max-w-64 px-4 py-3 text-ink-muted">
-                                <span class="block truncate">
+                            <td
+                                data-label="Último comentario"
+                                :class="
+                                    cn(
+                                        'max-w-64 px-4 py-3 text-ink-muted',
+                                        responsiveCell,
+                                    )
+                                "
+                            >
+                                <span
+                                    class="block truncate @max-[620px]/card:max-w-none @max-[620px]/card:text-right"
+                                >
                                     {{ trackedJob.latest_comment?.body ?? '—' }}
                                 </span>
                             </td>

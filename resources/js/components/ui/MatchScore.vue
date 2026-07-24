@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { animate as tweenNumber } from 'motion-v';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { getMatchScoreMeta, normalizeMatchScore } from '@/lib/designSystem';
 import { cn } from '@/lib/utils';
 
 type ScoreSize = 'compact' | 'card' | 'hero';
+type PlaybackControls = { stop: () => void };
 
 const props = withDefaults(
     defineProps<{
@@ -19,9 +21,6 @@ const props = withDefaults(
 
 const normalizedScore = computed(() => normalizeMatchScore(props.score));
 const meta = computed(() => getMatchScoreMeta(props.score));
-const displayValue = computed(() =>
-    normalizedScore.value === null ? '--' : String(normalizedScore.value),
-);
 const accessibleLabel = computed(() =>
     normalizedScore.value === null
         ? 'Compatibilidad sin analizar'
@@ -30,6 +29,59 @@ const accessibleLabel = computed(() =>
 const dialSizeClass = computed(() =>
     props.size === 'hero' ? 'h-36 w-36' : 'h-24 w-24',
 );
+const numberSizeClass = computed(() =>
+    props.size === 'hero' ? 'text-step-metric' : 'text-step-h3',
+);
+
+// El dial (card/hero) cuenta y dibuja el arco con motion-v; "compact" es texto
+// plano y no lo necesita. displayCount es la fuente del número Y del arco para
+// que ambos avancen siempre en sincronía.
+const displayCount = ref(normalizedScore.value ?? 0);
+const strokeDashoffset = computed(() => 100 - displayCount.value);
+const displayValue = computed(() =>
+    normalizedScore.value === null ? '--' : String(displayCount.value),
+);
+
+let playback: PlaybackControls | undefined;
+
+function prefersReducedMotion(): boolean {
+    return (
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
+}
+
+function runScoreAnimation(): void {
+    playback?.stop();
+
+    const target = normalizedScore.value;
+
+    if (target === null) {
+        displayCount.value = 0;
+
+        return;
+    }
+
+    if (!props.animate || props.size === 'compact' || prefersReducedMotion()) {
+        displayCount.value = target;
+
+        return;
+    }
+
+    displayCount.value = 0;
+    playback = tweenNumber(0, target, {
+        duration: 1.1,
+        ease: [0.16, 1, 0.3, 1],
+        onUpdate(value) {
+            displayCount.value = Math.round(value);
+        },
+    });
+}
+
+watch([normalizedScore, () => props.animate, () => props.size], runScoreAnimation, {
+    immediate: true,
+});
+onBeforeUnmount(() => playback?.stop());
 </script>
 
 <template>
@@ -94,11 +146,11 @@ const dialSizeClass = computed(() =>
                     r="17"
                     pathLength="100"
                     fill="none"
-                    :class="cn(meta.strokeClass, animate && 'animate-score-in')"
+                    :class="meta.strokeClass"
                     stroke-width="3.5"
                     stroke-linecap="round"
                     stroke-dasharray="100"
-                    :stroke-dashoffset="100 - normalizedScore"
+                    :stroke-dashoffset="strokeDashoffset"
                 />
             </svg>
             <div
@@ -113,7 +165,7 @@ const dialSizeClass = computed(() =>
                     :class="
                         cn(
                             'font-data leading-none font-semibold tracking-[-0.06em] tabular-nums',
-                            size === 'hero' ? 'text-4xl' : 'text-2xl',
+                            numberSizeClass,
                         )
                     "
                 >

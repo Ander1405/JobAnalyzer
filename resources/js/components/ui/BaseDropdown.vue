@@ -251,48 +251,69 @@ function onMenuKeydown(event: KeyboardEvent): void {
         </button>
 
         <Teleport to="body">
-            <div
-                v-if="open"
-                :id="menuId"
-                ref="menu"
-                role="menu"
-                :aria-label="menuLabel"
-                tabindex="-1"
-                :style="menuStyle"
-                class="fixed z-110 grid max-w-80 min-w-48 gap-0.5 rounded-card border border-line bg-surface-raised p-1.5 shadow-raised outline-none"
-                @keydown="onMenuKeydown"
-            >
-                <slot
-                    v-if="$slots.items"
-                    name="items"
-                    :close="closeMenu"
-                    :item-class="menuItemClass"
-                />
-                <template v-else>
-                    <button
-                        v-for="item in items"
-                        :key="item.value"
-                        type="button"
-                        role="menuitem"
-                        tabindex="-1"
-                        :disabled="item.disabled"
-                        :class="
-                            cn(
-                                menuItemClass,
-                                item.destructive &&
-                                    'text-error hover:bg-error-surface focus-visible:bg-error-surface focus-visible:text-error',
-                            )
-                        "
-                        @click="selectItem(item)"
-                    >
-                        <slot name="item" :item="item">
-                            <span class="min-w-0 flex-1 truncate">{{
-                                item.label
-                            }}</span>
-                        </slot>
-                    </button>
-                </template>
-            </div>
+            <Transition name="dropdown-menu">
+                <div
+                    v-if="open"
+                    :id="menuId"
+                    ref="menu"
+                    role="menu"
+                    :aria-label="menuLabel"
+                    tabindex="-1"
+                    :style="menuStyle"
+                    class="fixed z-110 grid max-w-80 min-w-48 gap-0.5 rounded-card border border-line bg-surface-raised p-1.5 shadow-raised outline-none"
+                    @keydown="onMenuKeydown"
+                >
+                    <slot
+                        v-if="$slots.items"
+                        name="items"
+                        :close="closeMenu"
+                        :item-class="menuItemClass"
+                    />
+                    <template v-else>
+                        <button
+                            v-for="item in items"
+                            :key="item.value"
+                            type="button"
+                            role="menuitem"
+                            tabindex="-1"
+                            :disabled="item.disabled"
+                            :class="
+                                cn(
+                                    menuItemClass,
+                                    item.destructive &&
+                                        'text-error hover:bg-error-surface focus-visible:bg-error-surface focus-visible:text-error',
+                                )
+                            "
+                            @click="selectItem(item)"
+                        >
+                            <slot name="item" :item="item">
+                                <span class="min-w-0 flex-1 truncate">{{
+                                    item.label
+                                }}</span>
+                            </slot>
+                        </button>
+                    </template>
+                </div>
+            </Transition>
         </Teleport>
     </div>
 </template>
+
+<style scoped>
+/* El menú carga el ref que usan positionMenu/menuItems/onMenuKeydown, así que
+   se anima con <Transition> + CSS (mismo patrón que BaseOverlay.vue) en vez
+   de motion-v: motion.div expone la instancia del componente por ref, no el
+   nodo DOM, y hubiera obligado a reescribir ese acceso directo al elemento. */
+.dropdown-menu-enter-active,
+.dropdown-menu-leave-active {
+    transition:
+        opacity 140ms cubic-bezier(0.16, 1, 0.3, 1),
+        transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-menu-enter-from,
+.dropdown-menu-leave-to {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.98);
+}
+</style>

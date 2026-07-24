@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { motion } from 'motion-v';
 import AppIcon from '@/components/AppIcon.vue';
 import { BaseButton, BaseCard, BaseInput } from '@/components/ui';
 import GuestLayout from '@/layouts/GuestLayout.vue';
+
+// Misma entrada sutil al montar que Login.vue, para coherencia entre ambos
+// formularios de auth. Ver nota allí sobre por qué motion.div es seguro aquí.
+const cardTransition = { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const };
 
 const form = useForm({
     name: '',
@@ -25,91 +30,100 @@ function submit(): void {
         <section
             class="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,1fr)_29rem] lg:items-center lg:px-8 lg:py-20"
         >
-            <BaseCard as="div" variant="raised" class="p-6 sm:p-8 lg:order-2">
-                <div class="mb-7">
-                    <p class="text-sm font-semibold text-primary">
-                        Cuenta nueva
+            <motion.div
+                :initial="{ opacity: 0, y: 10 }"
+                :animate="{ opacity: 1, y: 0 }"
+                :transition="cardTransition"
+                class="lg:order-2"
+            >
+                <BaseCard as="div" variant="raised" class="p-6 sm:p-8">
+                    <div class="mb-7">
+                        <p class="text-sm font-semibold text-primary">
+                            Cuenta nueva
+                        </p>
+                        <h1
+                            class="mt-2 text-step-h3 font-semibold tracking-[-0.03em]"
+                        >
+                            Crea tu acceso a JobHunter
+                        </h1>
+                        <p class="mt-2 text-sm leading-6 text-ink-muted">
+                            Usa un email al que tengas acceso.
+                        </p>
+                    </div>
+
+                    <form class="grid gap-5" @submit.prevent="submit">
+                        <BaseInput
+                            v-model="form.name"
+                            label="Nombre"
+                            autocomplete="name"
+                            required
+                            :error="form.errors.name"
+                        />
+
+                        <BaseInput
+                            v-model="form.email"
+                            label="Email"
+                            type="email"
+                            autocomplete="email"
+                            required
+                            :error="form.errors.email"
+                        />
+
+                        <BaseInput
+                            v-model="form.password"
+                            label="Contraseña"
+                            type="password"
+                            autocomplete="new-password"
+                            required
+                            hint="Usa 12 o más caracteres con mayúscula, minúscula, número y símbolo."
+                            :error="form.errors.password"
+                        />
+
+                        <BaseInput
+                            v-model="form.password_confirmation"
+                            label="Confirmar contraseña"
+                            type="password"
+                            autocomplete="new-password"
+                            required
+                            :error="form.errors.password_confirmation"
+                        />
+
+                        <BaseButton
+                            type="submit"
+                            size="lg"
+                            class="w-full"
+                            :loading="form.processing"
+                            loading-label="Creando cuenta"
+                        >
+                            Crear cuenta
+                        </BaseButton>
+                    </form>
+
+                    <p class="mt-6 text-center text-sm text-ink-muted">
+                        ¿Ya tienes cuenta?
+                        <Link
+                            href="/login"
+                            class="font-semibold text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        >
+                            Inicia sesión
+                        </Link>
                     </p>
-                    <h1 class="mt-2 text-2xl font-semibold tracking-[-0.03em]">
-                        Crea tu acceso a JobHunter
-                    </h1>
-                    <p class="mt-2 text-sm leading-6 text-ink-muted">
-                        Usa un email al que tengas acceso.
-                    </p>
-                </div>
-
-                <form class="grid gap-5" @submit.prevent="submit">
-                    <BaseInput
-                        v-model="form.name"
-                        label="Nombre"
-                        autocomplete="name"
-                        required
-                        :error="form.errors.name"
-                    />
-
-                    <BaseInput
-                        v-model="form.email"
-                        label="Email"
-                        type="email"
-                        autocomplete="email"
-                        required
-                        :error="form.errors.email"
-                    />
-
-                    <BaseInput
-                        v-model="form.password"
-                        label="Contraseña"
-                        type="password"
-                        autocomplete="new-password"
-                        required
-                        hint="Usa 12 o más caracteres con mayúscula, minúscula, número y símbolo."
-                        :error="form.errors.password"
-                    />
-
-                    <BaseInput
-                        v-model="form.password_confirmation"
-                        label="Confirmar contraseña"
-                        type="password"
-                        autocomplete="new-password"
-                        required
-                        :error="form.errors.password_confirmation"
-                    />
-
-                    <BaseButton
-                        type="submit"
-                        size="lg"
-                        class="w-full"
-                        :loading="form.processing"
-                        loading-label="Creando cuenta"
-                    >
-                        Crear cuenta
-                    </BaseButton>
-                </form>
-
-                <p class="mt-6 text-center text-sm text-ink-muted">
-                    ¿Ya tienes cuenta?
-                    <Link
-                        href="/login"
-                        class="font-semibold text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                    >
-                        Inicia sesión
-                    </Link>
-                </p>
-            </BaseCard>
+                </BaseCard>
+            </motion.div>
 
             <div class="max-w-xl lg:order-1">
                 <div
-                    class="mb-7 inline-flex items-center gap-2 rounded-control bg-primary-subtle px-3 py-2 text-sm font-semibold text-primary"
+                    class="mb-7 inline-flex items-center gap-2 rounded-control bg-primary-subtle px-3 py-2 font-data text-step-eyebrow font-semibold tracking-[0.12em] text-primary uppercase"
                 >
                     <AppIcon name="brand" class="h-4 w-4" />
                     Empieza con tu perfil real
                 </div>
                 <h2
-                    class="max-w-lg text-4xl leading-[1.04] font-semibold tracking-[-0.04em] text-balance sm:text-5xl"
+                    class="max-w-lg text-step-h2 leading-[1.04] font-semibold tracking-[-0.04em] text-balance"
                 >
                     Convierte cada vacante en una decisión informada.
                 </h2>
-                <p class="mt-5 max-w-lg text-lg leading-8 text-ink-muted">
+                <p class="mt-5 max-w-lg text-step-lead text-ink-muted">
                     Crea tu cuenta para encontrar oportunidades afines, medir tu
                     compatibilidad y preparar una versión de CV para cada
                     postulación.

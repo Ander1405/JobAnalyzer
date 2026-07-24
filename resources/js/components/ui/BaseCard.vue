@@ -19,8 +19,12 @@ const props = withDefaults(
 
 const cardClass = computed(() =>
     cn(
-        'rounded-card border border-line',
-        props.padded && 'p-4 sm:p-5',
+        // @container/card: la tarjeta puede vivir en un layout de 1 o de 3
+        // columnas en la misma vista, así que su padding responde a SU ancho,
+        // no al viewport. Convención: nombra el container "/card" para que
+        // el slot pueda anidar sus propios @container sin chocar variantes.
+        'rounded-card border border-line @container/card',
+        props.padded && 'p-4 @sm/card:p-5',
         props.variant === 'default' && 'bg-surface shadow-card',
         props.variant === 'raised' && 'bg-surface-raised shadow-raised',
         props.variant === 'subtle' && 'bg-surface-subtle',

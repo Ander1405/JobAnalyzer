@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Job Hunter · Sistema visual v1</title>
+<link rel="preconnect" href="https://fonts.bunny.net" />
+<link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700|jetbrains-mono:400,500,700" rel="stylesheet" />
+<style>
+/* ============================================================
+   JOB HUNTER — LENGUAJE VISUAL v1
+   Evolución de los tokens actuales (--jh-*), no reemplazo.
+   Rellena los 3 vacíos: clamp() · @container · motion.
+   ============================================================ */
+:root {
+  color-scheme: light;
+
+  --jh-canvas: #f2f5fb;
+  --jh-surface: #ffffff;
+  --jh-surface-subtle: #e9eef7;
+  --jh-text: #131c31;
+  --jh-text-muted: #526078;
+  --jh-text-subtle: #5f6c82;
+  --jh-border: #ced6e4;
+  --jh-border-strong: #7d8ba1;
+
+  --jh-primary: #1749e9;
+  --jh-primary-hover: #103bc5;
+  --jh-primary-active: #0d309f;
+  --jh-primary-subtle: #e5ebff;
+  --jh-primary-contrast: #ffffff;
+  --jh-secondary: #44546f;
+  --jh-secondary-subtle: #e7ecf4;
+  --jh-focus: #1749e9;
+
+  --jh-score-excellent: #087a55;   --jh-score-excellent-surface: #dcf8ec;
+  --jh-score-very-good: #1764d8;   --jh-score-very-good-surface: #e0ecff;
+  --jh-score-acceptable: #9a5800;  --jh-score-acceptable-surface: #fff0cf;
+  --jh-score-low: #b42318;         --jh-score-low-surface: #fee4e2;
+  --jh-success: #087a55; --jh-warning: #9a5800; --jh-error: #b42318;
+  --jh-error-surface: #fee4e2;
+
+  --jh-shadow-card: 0 1px 2px rgb(16 24 40 / .06), 0 8px 18px -12px rgb(16 24 40 / .22);
+  --jh-shadow-raised: 0 2px 4px rgb(16 24 40 / .08), 0 18px 40px -18px rgb(16 24 40 / .32);
+  --jh-shadow-action: 0 2px 3px rgb(12 37 118 / .18), 0 8px 18px -10px rgb(23 73 233 / .72);
+
+  --radius-control: .625rem;
+  --radius-card: .875rem;
+  --radius-panel: 1.125rem;
+
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-data: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* NUEVO — escala tipográfica fluida (rellena el vacío clamp()) */
+  --step-eyebrow: clamp(.72rem, .69rem + .12vw, .8rem);
+  --step-body:    clamp(.9rem, .87rem + .16vw, 1rem);
+  --step-lead:    clamp(1.05rem, .98rem + .35vw, 1.25rem);
+  --step-h3:      clamp(1.2rem, 1.05rem + .7vw, 1.6rem);
+  --step-h2:      clamp(1.6rem, 1.3rem + 1.5vw, 2.6rem);
+  --step-h1:      clamp(2.2rem, 1.6rem + 3vw, 4rem);
+  --step-metric:  clamp(2.4rem, 1.9rem + 2.6vw, 3.6rem);
+
+  --ease-signal: cubic-bezier(.16, 1, .3, 1);
+}
+.dark {
+  color-scheme: dark;
+  --jh-canvas: #08101f;
+  --jh-surface: #0e182b;
+  --jh-surface-subtle: #1b2944;
+  --jh-text: #f4f7fc;
+  --jh-text-muted: #b6c0d1;
+  --jh-text-subtle: #94a2b8;
+  --jh-border: #2b3a57;
+  --jh-border-strong: #607393;
+  --jh-primary: #7898ff;
+  --jh-primary-hover: #91aaff;
+  --jh-primary-active: #adc0ff;
+  --jh-primary-subtle: #1b2e66;
+  --jh-primary-contrast: #07112b;
+  --jh-secondary: #b6c4d8;
+  --jh-secondary-subtle: #1a293f;
+  --jh-focus: #91aaff;
+  --jh-score-excellent: #62ddb2; --jh-score-excellent-surface: #123d33;
+  --jh-score-very-good: #8db5ff; --jh-score-very-good-surface: #192f5a;
+  --jh-score-acceptable: #ffc768; --jh-score-acceptable-surface: #493214;
+  --jh-score-low: #ff9b94; --jh-score-low-surface: #4a2325;
+  --jh-error: #ff9b94; --jh-error-surface: #4a2325;
+  --jh-shadow-card: 0 1px 2px rgb(0 0 0 / .24), 0 10px 24px -14px rgb(0 0 0 / .7);
+  --jh-shadow-raised: 0 2px 5px rgb(0 0 0 / .32), 0 22px 48px -20px rgb(0 0 0 / .86);
+  --jh-shadow-action: 0 2px 3px rgb(0 0 0 / .28), 0 10px 22px -12px rgb(120 152 255 / .64);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--jh-canvas);
+  color: var(--jh-text);
+  font-family: var(--font-sans);
+  font-size: var(--step-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  transition: background .4s var(--ease-signal), color .4s var(--ease-signal);
+}
+h1, h2, h3 { margin: 0; line-height: 1.08; letter-spacing: -.02em; font-weight: 600; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--jh-focus); outline-offset: 2px; border-radius: 4px; }
+
+/* ---------- shell ---------- */
+.wrap { max-width: 1120px; margin: 0 auto; padding: clamp(1.25rem, 4vw, 3.5rem) clamp(1rem, 4vw, 2rem) 6rem; }
+.eyebrow {
+  font-family: var(--font-data);
+  font-size: var(--step-eyebrow);
+  font-weight: 500;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--jh-primary);
+  display: inline-flex; align-items: center; gap: .5rem;
+}
+.eyebrow::before { content: ""; width: 1.6rem; height: 2px; background: currentColor; }
+.muted { color: var(--jh-text-muted); }
+.subtle { color: var(--jh-text-subtle); }
+
+/* signal bars motif (signature accent) */
+.bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 1.1em; }
+.bars i { width: 4px; background: var(--jh-primary); border-radius: 2px; animation: bar 1.4s var(--ease-signal) infinite; }
+.bars i:nth-child(1){ height: 40%; animation-delay: 0s; }
+.bars i:nth-child(2){ height: 100%; animation-delay: .18s; }
+.bars i:nth-child(3){ height: 66%; animation-delay: .36s; }
+.bars i:nth-child(4){ height: 84%; animation-delay: .54s; }
+@keyframes bar { 0%,100%{ transform: scaleY(.5); opacity:.55 } 50%{ transform: scaleY(1); opacity:1 } }
+
+/* ---------- topbar ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .75rem clamp(1rem, 4vw, 2rem);
+  background: color-mix(in srgb, var(--jh-canvas) 82%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--jh-border);
+}
+.brand { display: flex; align-items: center; gap: .6rem; font-weight: 700; letter-spacing: -.02em; }
+.brand .dot { width: 1.9rem; height: 1.9rem; border-radius: 9px; background: var(--jh-primary); box-shadow: var(--jh-shadow-action); display: grid; place-items: center; }
+.brand .dot .bars i { background: var(--jh-primary-contrast); }
+
+/* ---------- hero ---------- */
+.hero { display: grid; gap: clamp(1.5rem, 4vw, 3rem); grid-template-columns: 1fr; align-items: center; margin: clamp(2rem, 6vw, 4rem) 0 clamp(2.5rem, 7vw, 5rem); }
+@media (min-width: 820px) { .hero { grid-template-columns: 1.15fr .85fr; } }
+.hero h1 { font-size: var(--step-h1); font-weight: 700; margin-top: .9rem; }
+.hero h1 .grad { background: linear-gradient(100deg, var(--jh-primary), color-mix(in srgb, var(--jh-primary) 55%, var(--jh-score-excellent))); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p.lead { font-size: var(--step-lead); color: var(--jh-text-muted); margin-top: 1rem; max-width: 46ch; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.75rem; }
+
+/* ---------- SIGNATURE: dial de match-score ---------- */
+.dial-card {
+  position: relative;
+  background: var(--jh-surface);
+  border: 1px solid var(--jh-border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--jh-shadow-raised);
+  padding: 1.75rem;
+  display: grid; gap: 1rem; justify-items: center;
+  overflow: hidden;
+}
+.dial-card::before { content:""; position:absolute; inset:0; background: radial-gradient(120% 90% at 80% -10%, var(--jh-primary-subtle), transparent 60%); pointer-events:none; }
+.dial { position: relative; width: min(15rem, 60vw); aspect-ratio: 1; }
+.dial svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.dial .track { fill: none; stroke: var(--jh-surface-subtle); stroke-width: 12; }
+.dial .prog { fill: none; stroke: var(--jh-score-excellent); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 289; stroke-dashoffset: 289; transition: stroke-dashoffset 1.1s var(--ease-signal); }
+.dial .center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.dial .num { font-family: var(--font-data); font-weight: 700; font-size: var(--step-metric); line-height: 1; letter-spacing: -.03em; }
+.dial .num small { font-size: .4em; color: var(--jh-text-subtle); }
+.dial .lbl { font-family: var(--font-data); font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--jh-score-excellent); margin-top: .35rem; font-weight: 600; }
+.dial-legend { display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; font-size: .8rem; }
+.dial-legend span { display: inline-flex; align-items: center; gap: .4rem; color: var(--jh-text-muted); }
+.dot-s { width: .6rem; height: .6rem; border-radius: 50%; }
+
+/* ---------- section scaffolding ---------- */
+.section { margin: clamp(2.5rem, 7vw, 5rem) 0; }
+.section > header { margin-bottom: 1.5rem; }
+.section > header h2 { font-size: var(--step-h2); margin-top: .5rem; }
+.section > header p { color: var(--jh-text-muted); margin-top: .6rem; max-width: 60ch; }
+
+/* ---------- swatches ---------- */
+.swatches { display: grid; gap: .9rem; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
+.sw { border: 1px solid var(--jh-border); border-radius: var(--radius-card); overflow: hidden; background: var(--jh-surface); box-shadow: var(--jh-shadow-card); }
+.sw .chip { height: 4.5rem; }
+.sw .meta { padding: .6rem .75rem; }
+.sw .meta b { display: block; font-size: .85rem; }
+.sw .meta code { font-family: var(--font-data); font-size: .72rem; color: var(--jh-text-subtle); }
+
+/* ---------- type scale demo ---------- */
+.type-row { display: flex; align-items: baseline; gap: 1rem; padding: .85rem 0; border-bottom: 1px solid var(--jh-border); flex-wrap: wrap; }
+.type-row:last-child { border-bottom: 0; }
+.type-row .tag { font-family: var(--font-data); font-size: .72rem; color: var(--jh-primary); min-width: 5.5rem; }
+.type-row .tag em { color: var(--jh-text-subtle); font-style: normal; display:block; }
+
+/* ---------- buttons ---------- */
+.btn {
+  --_bg: var(--jh-primary); --_fg: var(--jh-primary-contrast); --_bd: transparent;
+  font: inherit; font-weight: 600; font-size: var(--step-body);
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .68rem 1.15rem; border-radius: var(--radius-control);
+  background: var(--_bg); color: var(--_fg); border: 1px solid var(--_bd);
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+  box-shadow: var(--jh-shadow-action);
+  transition: transform .12s var(--ease-signal), background .18s, box-shadow .18s, filter .18s;
+}
+.btn:hover { background: var(--jh-primary-hover); }
+.btn:active { transform: translateY(1px) scale(.985); background: var(--jh-primary-active); }
+.btn.secondary { --_bg: var(--jh-surface); --_fg: var(--jh-text); --_bd: var(--jh-border-strong); box-shadow: var(--jh-shadow-card); }
+.btn.secondary:hover { --_bg: var(--jh-secondary-subtle); }
+.btn.ghost { --_bg: transparent; --_fg: var(--jh-primary); box-shadow: none; }
+.btn.ghost:hover { --_bg: var(--jh-primary-subtle); }
+.btn.danger { --_bg: var(--jh-error); --_fg: #fff; box-shadow: none; }
+.btn.danger:hover { filter: brightness(.92); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.btn .spin { width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn-grid { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+
+/* ---------- inputs ---------- */
+.field { display: grid; gap: .4rem; margin-bottom: 1.1rem; }
+.field label { font-size: .85rem; font-weight: 600; }
+.field .req { color: var(--jh-error); }
+.input {
+  font: inherit; font-size: var(--step-body);
+  padding: .65rem .8rem; border-radius: var(--radius-control);
+  border: 1px solid var(--jh-border-strong); background: var(--jh-surface); color: var(--jh-text);
+  transition: border-color .18s, box-shadow .18s;
+  width: 100%;
+}
+.input::placeholder { color: var(--jh-text-subtle); }
+.input:focus { outline: none; border-color: var(--jh-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--jh-primary) 22%, transparent); }
+.field.error .input { border-color: var(--jh-error); box-shadow: 0 0 0 3px color-mix(in srgb, var(--jh-error) 20%, transparent); }
+.field .hint { font-size: .78rem; color: var(--jh-text-subtle); }
+.field.error .hint { color: var(--jh-error); font-weight: 500; }
+.input-icon { position: relative; }
+.input-icon .input { padding-left: 2.4rem; }
+.input-icon svg { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); color: var(--jh-text-subtle); }
+
+/* toggle */
+.switch { display: inline-flex; align-items: center; gap: .6rem; cursor: pointer; user-select: none; }
+.switch input { position: absolute; opacity: 0; }
+.switch .track { width: 2.6rem; height: 1.5rem; border-radius: 999px; background: var(--jh-border-strong); position: relative; transition: background .22s var(--ease-signal); }
+.switch .track::after { content:""; position:absolute; top: 3px; left: 3px; width: 1.1rem; height: 1.1rem; border-radius: 50%; background:#fff; box-shadow: 0 1px 3px rgb(0 0 0 /.35); transition: transform .28s var(--ease-signal); }
+.switch input:checked + .track { background: var(--jh-primary); }
+.switch input:checked + .track::after { transform: translateX(1.1rem); }
+.switch input:focus-visible + .track { outline: 2px solid var(--jh-focus); outline-offset: 2px; }
+
+/* ---------- CONTAINER QUERIES: job cards que reflow por su contenedor ---------- */
+.cq-demo { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .cq-demo { grid-template-columns: 1.5fr 1fr; } }
+.cq-lane { container-type: inline-size; background: var(--jh-surface-subtle); border: 1px dashed var(--jh-border-strong); border-radius: var(--radius-panel); padding: 1rem; }
+.cq-lane > .cap { font-family: var(--font-data); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--jh-text-subtle); margin-bottom: .75rem; display:block; }
+.jobcard {
+  background: var(--jh-surface); border: 1px solid var(--jh-border); border-radius: var(--radius-card);
+  box-shadow: var(--jh-shadow-card); padding: 1rem; display: grid; gap: .75rem;
+  transition: transform .18s var(--ease-signal), box-shadow .18s;
+}
+.jobcard + .jobcard { margin-top: .9rem; }
+.jobcard:hover { transform: translateY(-2px); box-shadow: var(--jh-shadow-raised); }
+.jobcard .role { font-weight: 600; font-size: var(--step-lead); }
+.jobcard .co { color: var(--jh-text-muted); font-size: .88rem; }
+.jobcard .tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+.pill { font-family: var(--font-data); font-size: .72rem; padding: .2rem .55rem; border-radius: 999px; background: var(--jh-surface-subtle); color: var(--jh-text-muted); }
+.scorebadge { font-family: var(--font-data); font-weight: 700; font-size: 1.05rem; padding: .35rem .7rem; border-radius: 10px; display: inline-flex; gap: .3rem; align-items: baseline; }
+.scorebadge small { font-size: .6em; font-weight: 500; opacity: .8; }
+/* cuando el CONTENEDOR pasa de 400px, la tarjeta se vuelve fila */
+@container (min-width: 400px) {
+  .jobcard { grid-template-columns: 1fr auto; align-items: center; }
+  .jobcard .body { grid-column: 1; }
+  .jobcard .aside { grid-column: 2; text-align: right; display: grid; gap: .5rem; justify-items: end; }
+}
+@container (max-width: 399.98px) {
+  .jobcard .aside { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--jh-border); padding-top: .7rem; }
+}
+
+/* ---------- TABLE → CARDS bajo su contenedor ---------- */
+.table-shell { container-type: inline-size; }
+.jtable { width: 100%; border-collapse: collapse; background: var(--jh-surface); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--jh-shadow-card); }
+.jtable th, .jtable td { text-align: left; padding: .8rem 1rem; border-bottom: 1px solid var(--jh-border); font-size: .9rem; }
+.jtable th { font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--jh-text-subtle); background: var(--jh-surface-subtle); font-weight: 600; }
+.jtable tbody tr { transition: background .15s; }
+.jtable tbody tr:hover { background: var(--jh-primary-subtle); }
+.jtable td .num { font-family: var(--font-data); font-weight: 600; }
+.jtable .rowcards { display: none; }
+@container (max-width: 620px) {
+  .jtable thead { display: none; }
+  .jtable, .jtable tbody, .jtable tr, .jtable td { display: block; width: 100%; }
+  .jtable tr { border: 1px solid var(--jh-border); border-radius: var(--radius-card); margin-bottom: .75rem; padding: .5rem .25rem; box-shadow: var(--jh-shadow-card); }
+  .jtable td { border: 0; padding: .4rem 1rem; display: flex; justify-content: space-between; gap: 1rem; }
+  .jtable td::before { content: attr(data-label); font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--jh-text-subtle); font-weight: 600; }
+}
+
+/* ---------- kanban chip (affordance táctil, no HTML5 DnD) ---------- */
+.kanban { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+@media (min-width: 640px){ .kanban { grid-template-columns: repeat(3, 1fr); } }
+.kcol { background: var(--jh-surface-subtle); border-radius: var(--radius-panel); padding: .85rem; }
+.kcol h4 { margin: 0 0 .6rem; font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; color: var(--jh-text-muted); display:flex; justify-content:space-between; }
+.kchip { background: var(--jh-surface); border: 1px solid var(--jh-border); border-radius: var(--radius-control); padding: .7rem .8rem; box-shadow: var(--jh-shadow-card); display:grid; gap:.35rem; cursor: grab; }
+.kchip + .kchip { margin-top: .55rem; }
+.kchip:active { cursor: grabbing; }
+.kchip .grip { display:flex; gap:2px; }
+.kchip .grip i { width:3px; height:3px; border-radius:50%; background: var(--jh-border-strong); }
+.kchip .role { font-weight:600; font-size:.9rem; }
+.kmove { display:flex; gap:.35rem; }
+.kmove button { font: inherit; font-size:.72rem; padding:.15rem .5rem; border-radius:7px; border:1px solid var(--jh-border); background: var(--jh-surface-subtle); color: var(--jh-text-muted); cursor:pointer; }
+.kmove button:hover { border-color: var(--jh-primary); color: var(--jh-primary); }
+
+/* ---------- toast ---------- */
+.toast { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%) translateY(1.5rem); opacity: 0; pointer-events: none;
+  background: var(--jh-text); color: var(--jh-canvas); padding: .8rem 1.15rem; border-radius: var(--radius-control); box-shadow: var(--jh-shadow-raised);
+  display: flex; gap: .6rem; align-items: center; font-size: .9rem; font-weight: 500; z-index: 50;
+  transition: transform .34s var(--ease-signal), opacity .34s var(--ease-signal); }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast .ok { color: var(--jh-score-excellent); }
+
+/* cards grid */
+.cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+.panel { background: var(--jh-surface); border: 1px solid var(--jh-border); border-radius: var(--radius-panel); box-shadow: var(--jh-shadow-card); padding: clamp(1.1rem, 3vw, 1.6rem); }
+.panel h3 { font-size: var(--step-h3); }
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s var(--ease-signal), transform .6s var(--ease-signal); }
+.reveal.in { opacity: 1; transform: none; }
+.notecard { border-left: 3px solid var(--jh-primary); background: var(--jh-primary-subtle); color: var(--jh-text); padding: .9rem 1.1rem; border-radius: 0 var(--radius-card) var(--radius-card) 0; font-size: .9rem; }
+
+.footer-note { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--jh-border); color: var(--jh-text-subtle); font-size: .85rem; display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="dot"><span class="bars"><i></i><i></i><i></i><i></i></span></span>
+    Job&nbsp;Hunter
+  </div>
+  <label class="switch" title="Cambiar tema">
+    <input type="checkbox" id="theme" />
+    <span class="track"></span>
+    <span class="subtle" style="font-size:.82rem">Modo oscuro</span>
+  </label>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div>
+      <span class="eyebrow">Sistema visual · v1</span>
+      <h1>Lee la <span class="grad">señal</span> de cada vacante antes de postular.</h1>
+      <p class="lead">Un lenguaje visual afilado sobre la base que ya tienes: tipografía fluida, layouts por contenedor y micro-interacciones con intención. Mismo ADN azul-señal, más nitidez.</p>
+      <div class="hero-actions">
+        <a class="btn" href="#" onclick="ping(event)">Ver vacantes <span class="bars" style="height:.9em"><i></i><i></i><i></i><i></i></span></a>
+        <a class="btn secondary" href="#componentes">Explorar componentes</a>
+      </div>
+    </div>
+    <!-- SIGNATURE: dial de match-score -->
+    <div class="dial-card">
+      <div class="dial">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="track" cx="50" cy="50" r="46"></circle>
+          <circle class="prog" id="prog" cx="50" cy="50" r="46"></circle>
+        </svg>
+        <div class="center">
+          <div class="num"><span id="scoreNum">0</span><small>/100</small></div>
+          <div class="lbl">Excelente match</div>
+        </div>
+      </div>
+      <div class="dial-legend">
+        <span><span class="dot-s" style="background:var(--jh-score-excellent)"></span>85–100</span>
+        <span><span class="dot-s" style="background:var(--jh-score-very-good)"></span>70–84</span>
+        <span><span class="dot-s" style="background:var(--jh-score-acceptable)"></span>50–69</span>
+        <span><span class="dot-s" style="background:var(--jh-score-low)"></span>&lt;50</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLOR -->
+  <section class="section" id="componentes">
+    <header>
+      <span class="eyebrow">01 · Color</span>
+      <h2>Paleta de señal</h2>
+      <p>El azul <code style="font-family:var(--font-data)">#1749e9</code> es el único color audaz; la rampa de score es el único momento multi-tono, y está justificada porque codifica calidad de match. Todo lo demás es superficie y tinta.</p>
+    </header>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:var(--jh-primary)"></div><div class="meta"><b>Primary</b><code>#1749e9</code></div></div>
+      <div class="sw"><div class="chip" style="background:var(--jh-canvas);border-bottom:1px solid var(--jh-border)"></div><div class="meta"><b>Canvas</b><code>#f2f5fb</code></div></div>
+      <div class="sw"><div class="chip" style="background:var(--jh-text)"></div><div class="meta"><b>Ink</b><code>#131c31</code></div></div>
+      <div class="sw"><div class="chip" style="background:var(--jh-score-excellent)"></div><div class="meta"><b>Excelente</b><code>#087a55</code></div></div>
+      <div class="sw"><div class="chip" style="background:var(--jh-score-very-good)"></div><div class="meta"><b>Muy bueno</b><code>#1764d8</code></div></div>
+      <div class="sw"><div class="chip" style="background:var(--jh-score-acceptable)"></div><div class="meta"><b>Aceptable</b><code>#9a5800</code></div></div>
+      <div class="sw"><div class="chip" style="background:var(--jh-score-low)"></div><div class="meta"><b>Bajo</b><code>#b42318</code></div></div>
+    </div>
+  </section>
+
+  <!-- TYPE -->
+  <section class="section">
+    <header>
+      <span class="eyebrow">02 · Tipografía</span>
+      <h2>Escala fluida con <code style="font-family:var(--font-data)">clamp()</code></h2>
+      <p>Instrument Sans para texto y titulares; JetBrains Mono como cara de datos para scores, salarios y métricas — la voz de un instrumento. Todo escala suave con el viewport, sin saltos por breakpoint. <b>Redimensiona la ventana</b> y observa.</p>
+    </header>
+    <div class="panel">
+      <div class="type-row"><span class="tag">Metric<em>--step-metric</em></span><span style="font-family:var(--font-data);font-size:var(--step-metric);font-weight:700;letter-spacing:-.03em">$128k</span></div>
+      <div class="type-row"><span class="tag">H1<em>--step-h1</em></span><span style="font-size:var(--step-h1);font-weight:700">Encuentra tu match</span></div>
+      <div class="type-row"><span class="tag">H2<em>--step-h2</em></span><span style="font-size:var(--step-h2)">Vacantes recomendadas</span></div>
+      <div class="type-row"><span class="tag">Lead<em>--step-lead</em></span><span style="font-size:var(--step-lead);color:var(--jh-text-muted)">Ordenadas por afinidad con tu perfil.</span></div>
+      <div class="type-row"><span class="tag">Body<em>--step-body</em></span><span>El cuerpo base se mantiene legible de 320px a 4K sin tocar una media query.</span></div>
+      <div class="type-row"><span class="tag">Eyebrow<em>--step-eyebrow</em></span><span class="eyebrow" style="color:var(--jh-text-subtle)">Filtros activos</span></div>
+    </div>
+  </section>
+
+  <!-- BOTONES + INPUTS -->
+  <section class="section">
+    <header>
+      <span class="eyebrow">03 · Controles</span>
+      <h2>Botones, campos y estados</h2>
+      <p>Un mismo verbo mantiene su nombre en todo el flujo. Foco visible siempre, target táctil ≥44px, y el press responde con una micro-escala de 12ms.</p>
+    </header>
+    <div class="cards">
+      <div class="panel">
+        <h3 style="margin-bottom:1rem">Botones</h3>
+        <div class="btn-grid">
+          <button class="btn" onclick="ping(event)">Guardar</button>
+          <button class="btn secondary">Cancelar</button>
+          <button class="btn ghost">Ver detalle</button>
+          <button class="btn danger">Descartar</button>
+          <button class="btn" id="loadBtn" onclick="loadDemo(this)">Postular</button>
+          <button class="btn" disabled>No disponible</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-bottom:1rem">Formulario</h3>
+        <div class="field">
+          <label>Cargo deseado <span class="req">*</span></label>
+          <div class="input-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input class="input" placeholder="Ej. Product Designer" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Salario mínimo</label>
+          <input class="input" value="$90,000" style="font-family:var(--font-data)" />
+          <span class="hint">Se usa para calcular el match de compensación.</span>
+        </div>
+        <div class="field error">
+          <label>Correo</label>
+          <input class="input" value="ana@" />
+          <span class="hint">Escribe un correo válido, ej. ana@empresa.com</span>
+        </div>
+        <label class="switch"><input type="checkbox" checked /><span class="track"></span> Avísame de vacantes con match ≥85</label>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTAINER QUERIES -->
+  <section class="section">
+    <header>
+      <span class="eyebrow">04 · Responsive por contenedor</span>
+      <h2>La tarjeta se adapta a su espacio, no al viewport</h2>
+      <p>Con <code style="font-family:var(--font-data)">@container</code> la misma <b>JobCard</b> se apila en una columna estrecha y se vuelve fila en una ancha — aunque ambas estén en la misma pantalla. Así funciona en el sidebar, el panel y la lista sin duplicar componentes.</p>
+    </header>
+    <div class="cq-demo">
+      <div class="cq-lane">
+        <span class="cap">Contenedor ancho → fila</span>
+        <div class="jobcard">
+          <div class="body">
+            <div class="role">Senior Product Designer</div>
+            <div class="co">Nubank · Remoto · LatAm</div>
+            <div class="tags" style="margin-top:.5rem"><span class="pill">Figma</span><span class="pill">Design systems</span><span class="pill">B2C</span></div>
+          </div>
+          <div class="aside">
+            <span class="scorebadge" style="background:var(--jh-score-excellent-surface);color:var(--jh-score-excellent)">92<small>match</small></span>
+            <button class="btn ghost" style="padding:.35rem .7rem;font-size:.8rem">Guardar</button>
+          </div>
+        </div>
+      </div>
+      <div class="cq-lane">
+        <span class="cap">Contenedor estrecho → apilado</span>
+        <div class="jobcard">
+          <div class="body">
+            <div class="role">UX Researcher</div>
+            <div class="co">Rappi · Híbrido</div>
+            <div class="tags" style="margin-top:.5rem"><span class="pill">Entrevistas</span><span class="pill">Mixed-methods</span></div>
+          </div>
+          <div class="aside">
+            <span class="scorebadge" style="background:var(--jh-score-very-good-surface);color:var(--jh-score-very-good)">78<small>match</small></span>
+            <button class="btn ghost" style="padding:.35rem .7rem;font-size:.8rem">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TABLE → CARDS -->
+  <section class="section">
+    <header>
+      <span class="eyebrow">05 · Tablas</span>
+      <h2>Tabla que se vuelve tarjetas cuando no cabe</h2>
+      <p>Hoy las tablas hacen scroll horizontal en móvil. Aquí, bajo 620px de contenedor, cada fila colapsa en una tarjeta legible con etiquetas — sin scroll lateral, sin perder columnas. Angosta tu ventana para verlo.</p>
+    </header>
+    <div class="table-shell">
+      <table class="jtable">
+        <thead><tr><th>Vacante</th><th>Empresa</th><th>Salario</th><th>Match</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td data-label="Vacante">Frontend Engineer</td><td data-label="Empresa">Mercado Libre</td><td data-label="Salario"><span class="num">$110k</span></td><td data-label="Match"><span class="scorebadge" style="background:var(--jh-score-excellent-surface);color:var(--jh-score-excellent);font-size:.9rem;padding:.15rem .5rem">96</span></td><td data-label="Estado"><span class="pill">Nueva</span></td></tr>
+          <tr><td data-label="Vacante">Data Analyst</td><td data-label="Empresa">Platzi</td><td data-label="Salario"><span class="num">$72k</span></td><td data-label="Match"><span class="scorebadge" style="background:var(--jh-score-very-good-surface);color:var(--jh-score-very-good);font-size:.9rem;padding:.15rem .5rem">81</span></td><td data-label="Estado"><span class="pill">En revisión</span></td></tr>
+          <tr><td data-label="Vacante">PM Junior</td><td data-label="Empresa">Bold</td><td data-label="Salario"><span class="num">$58k</span></td><td data-label="Match"><span class="scorebadge" style="background:var(--jh-score-acceptable-surface);color:var(--jh-score-acceptable);font-size:.9rem;padding:.15rem .5rem">64</span></td><td data-label="Estado"><span class="pill">Postulada</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- KANBAN -->
+  <section class="section">
+    <header>
+      <span class="eyebrow">06 · Seguimiento</span>
+      <h2>Kanban con control por teclado y toque</h2>
+      <p>El tablero actual usa drag&amp;drop HTML5, que no funciona en táctil. La propuesta añade botones de mover (◀ ▶) en cada tarjeta: la interacción principal deja de depender del arrastre y queda accesible.</p>
+    </header>
+    <div class="kanban">
+      <div class="kcol"><h4>Guardadas <span>2</span></h4>
+        <div class="kchip"><div class="grip"><i></i><i></i><i></i></div><span class="role">Backend Go</span><div class="kmove"><button aria-label="Mover a la derecha">Postular ▶</button></div></div>
+        <div class="kchip"><div class="grip"><i></i><i></i><i></i></div><span class="role">iOS Engineer</span><div class="kmove"><button>Postular ▶</button></div></div>
+      </div>
+      <div class="kcol"><h4>Postuladas <span>1</span></h4>
+        <div class="kchip"><div class="grip"><i></i><i></i><i></i></div><span class="role">Design Lead</span><div class="kmove"><button>◀</button><button>Entrevista ▶</button></div></div>
+      </div>
+      <div class="kcol"><h4>Entrevista <span>1</span></h4>
+        <div class="kchip"><div class="grip"><i></i><i></i><i></i></div><span class="role">Growth PM</span><div class="kmove"><button>◀</button><button>Oferta ▶</button></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOTION / REVEAL -->
+  <section class="section">
+    <header>
+      <span class="eyebrow">07 · Micro-interacciones</span>
+      <h2>Movimiento con intención</h2>
+      <p>Reveal en scroll, count-up del score, press de botón, toast de confirmación. Todo bajo <code style="font-family:var(--font-data)">prefers-reduced-motion</code>: si el sistema pide calma, se desactiva.</p>
+    </header>
+    <div class="cards">
+      <div class="panel reveal"><h3>Entrada suave</h3><p class="muted" style="margin-top:.5rem">Los paneles suben 14px y aparecen al entrar en viewport. Un gesto, no una fiesta.</p></div>
+      <div class="panel reveal"><h3>Score animado</h3><p class="muted" style="margin-top:.5rem">El dial dibuja el arco y cuenta hasta el valor — refuerza que el número se calculó, no se puso.</p></div>
+      <div class="panel reveal"><div class="notecard">Confirmaciones en la voz del producto: <b>“Postulación enviada”</b>, no “Success”. El botón que dice Postular produce ese mensaje.</div></div>
+    </div>
+  </section>
+
+  <div class="footer-note">
+    <span>Job Hunter · lenguaje visual v1 — evolución sobre los tokens <code style="font-family:var(--font-data)">--jh-*</code> vigentes.</span>
+    <span class="bars"><i></i><i></i><i></i><i></i></span>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="ok">✓</span> <span id="toastMsg">Postulación enviada</span></div>
+
+<script>
+// tema
+const themeToggle = document.getElementById('theme');
+themeToggle.addEventListener('change', e => document.documentElement.classList.toggle('dark', e.target.checked));
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// dial: dibuja arco + count-up
+function runDial(){
+  const prog = document.getElementById('prog');
+  const num = document.getElementById('scoreNum');
+  const target = 92, circ = 289;
+  if (reduce){ prog.style.transition='none'; prog.style.strokeDashoffset = circ*(1-target/100); num.textContent = target; return; }
+  requestAnimationFrame(()=> prog.style.strokeDashoffset = circ*(1-target/100));
+  let cur = 0; const started = performance.now();
+  (function tick(t){ const p = Math.min(1,(t-started)/1100); cur = Math.round(target*(1-Math.pow(1-p,3))); num.textContent = cur; if(p<1) requestAnimationFrame(tick); })(started);
+}
+
+// reveal on scroll
+const io = new IntersectionObserver(es=>es.forEach(x=>{ if(x.isIntersecting){ x.target.classList.add('in'); io.unobserve(x.target);} }),{threshold:.2});
+document.querySelectorAll('.reveal').forEach(el=> reduce ? el.classList.add('in') : io.observe(el));
+
+// toast
+let toastT;
+function showToast(msg){ const t=document.getElementById('toast'); document.getElementById('toastMsg').textContent=msg||'Postulación enviada'; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+function ping(e){ e && e.preventDefault(); showToast('Listo'); }
+function loadDemo(btn){ const html=btn.innerHTML; btn.disabled=true; btn.innerHTML='<span class="spin"></span> Enviando'; setTimeout(()=>{ btn.disabled=false; btn.innerHTML=html; showToast('Postulación enviada'); }, 1100); }
+
+// kanban: mover chip a la siguiente columna
+document.querySelectorAll('.kmove button').forEach(b=>{
+  if(!/▶/.test(b.textContent)) return;
+  b.addEventListener('click', ()=>{
+    const chip=b.closest('.kchip'); const col=chip.closest('.kcol'); const next=col.nextElementSibling;
+    if(next){ next.appendChild(chip); showToast('Movida a '+next.querySelector('h4').childNodes[0].textContent.trim()); }
+  });
+});
+
+runDial();
+</script>
+</body>
+</html>

@@ -67,7 +67,13 @@ const primaryAction = computed(() =>
             </div>
         </header>
 
-        <main id="main-content" tabindex="-1" class="flex-1 outline-none">
+        <!-- Mismo container "/content" que AppLayout.vue: vistas de auth/landing
+             pueden usar @sm/content:, @lg/content:, etc. sin duplicar breakpoints. -->
+        <main
+            id="main-content"
+            tabindex="-1"
+            class="@container/content flex-1 outline-none"
+        >
             <slot />
         </main>
 

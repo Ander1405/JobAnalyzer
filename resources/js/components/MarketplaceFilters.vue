@@ -50,9 +50,12 @@ const sortOptions = [
 </script>
 
 <template>
-    <section class="grid gap-5 border-y border-line py-5">
+    <!-- @container/filters: la barra de filtros puede vivir a todo el ancho
+         del contenido o en un panel más estrecho; responde a SU ancho, no al
+         viewport, igual que el resto del sistema (ver BaseCard/@container/card). -->
+    <section class="@container/filters grid gap-5 border-y border-line py-5">
         <div
-            class="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-[minmax(13rem,1.35fr)_repeat(4,minmax(8rem,1fr))]"
+            class="grid items-end gap-4 @sm/filters:grid-cols-2 @lg/filters:grid-cols-4 @xl/filters:grid-cols-[minmax(13rem,1.35fr)_repeat(4,minmax(8rem,1fr))]"
         >
             <BaseInput
                 v-model="filters.search"
@@ -82,7 +85,7 @@ const sortOptions = [
         </div>
 
         <div
-            class="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"
+            class="flex flex-col justify-between gap-4 @xl/filters:flex-row @xl/filters:items-end"
         >
             <div class="flex flex-wrap items-end gap-4">
                 <label

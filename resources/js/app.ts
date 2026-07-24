@@ -1,5 +1,6 @@
 import { createInertiaApp, router as inertiaRouter } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { MotionConfig } from 'motion-v';
 import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 import { initializeTheme } from '@/lib/theme';
@@ -40,7 +41,12 @@ createInertiaApp({
             }
         });
 
-        createApp({ render: () => h(App, props) })
+        // reducedMotion: 'user' hace que TODOS los componentes motion.* respeten
+        // prefers-reduced-motion automáticamente, sin checarlo en cada componente.
+        createApp({
+            render: () =>
+                h(MotionConfig, { reducedMotion: 'user' }, () => h(App, props)),
+        })
             .use(plugin)
             .use(router)
             .mount(el);

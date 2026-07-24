@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { router as inertiaRouter, usePage } from '@inertiajs/vue3';
+import { AnimatePresence, motion } from 'motion-v';
 import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import AppIcon from '@/components/AppIcon.vue';
 import {
@@ -288,15 +289,19 @@ function failureMessage(error: unknown, fallback: string): string {
         <header class="mb-5 border-b border-line pb-5">
             <div class="flex flex-wrap items-end justify-between gap-4">
                 <div class="min-w-0">
-                    <p class="mb-2 text-xs font-semibold text-primary">
+                    <p
+                        class="mb-2 text-step-eyebrow font-semibold text-primary"
+                    >
                         ADMINISTRACIÓN
                     </p>
                     <h1
-                        class="text-3xl font-semibold tracking-[-0.04em] text-balance text-ink"
+                        class="text-step-h2 font-semibold tracking-[-0.04em] text-balance text-ink"
                     >
                         Usuarios
                     </h1>
-                    <p class="mt-1 max-w-2xl text-sm leading-6 text-ink-muted">
+                    <p
+                        class="mt-1 max-w-2xl text-step-body leading-6 text-ink-muted"
+                    >
                         Gestiona el acceso de tu equipo y mantén claros sus
                         roles dentro de JobHunter.
                     </p>
@@ -351,7 +356,7 @@ function failureMessage(error: unknown, fallback: string): string {
                 <div
                     v-for="row in 5"
                     :key="row"
-                    class="grid grid-cols-[minmax(12rem,1.5fr)_minmax(13rem,1.5fr)_10rem_8rem] gap-5 px-4 py-4"
+                    class="grid grid-cols-[minmax(12rem,1.5fr)_minmax(13rem,1.5fr)_10rem_8rem] gap-5 px-4 py-4 @max-[620px]/content:grid-cols-1 @max-[620px]/content:gap-2"
                 >
                     <BaseSkeleton shape="text" class="w-3/4" />
                     <BaseSkeleton shape="text" class="w-4/5" />
@@ -407,10 +412,19 @@ function failureMessage(error: unknown, fallback: string): string {
 
         <template v-else>
             <BaseCard :padded="false" class="overflow-hidden">
-                <div class="overflow-x-auto overscroll-x-contain">
-                    <table class="w-full min-w-[860px] text-left text-sm">
+                <!-- Tabla → tarjetas: bajo 620px de /content (el contenedor
+                     nombrado de AppLayout, no el viewport) cada fila colapsa
+                     en una tarjeta con etiquetas (data-label vía
+                     before:content-[attr(...)]) en vez de forzar scroll
+                     lateral. Mismo umbral que el mockup de referencia. -->
+                <div
+                    class="overflow-x-auto overscroll-x-contain @max-[620px]/content:overflow-visible"
+                >
+                    <table
+                        class="w-full text-left text-sm @max-[620px]/content:block"
+                    >
                         <thead
-                            class="border-b border-line bg-surface-subtle text-ink-muted"
+                            class="border-b border-line bg-surface-subtle text-ink-muted @max-[620px]/content:hidden"
                         >
                             <tr>
                                 <th class="px-4 py-3 font-semibold">Nombre</th>
@@ -422,13 +436,18 @@ function failureMessage(error: unknown, fallback: string): string {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-line">
+                        <tbody
+                            class="divide-y divide-line @max-[620px]/content:block @max-[620px]/content:divide-y-0 @max-[620px]/content:p-3"
+                        >
                             <tr
                                 v-for="user in users.data"
                                 :key="user.id"
-                                class="bg-surface transition-colors hover:bg-surface-subtle"
+                                class="bg-surface transition-colors hover:bg-surface-subtle @max-[620px]/content:mb-3 @max-[620px]/content:block @max-[620px]/content:rounded-card @max-[620px]/content:border @max-[620px]/content:border-line @max-[620px]/content:shadow-card @max-[620px]/content:last:mb-0"
                             >
-                                <td class="px-4 py-3">
+                                <td
+                                    data-label="Nombre"
+                                    class="px-4 py-3 @max-[620px]/content:flex @max-[620px]/content:flex-col @max-[620px]/content:gap-1 @max-[620px]/content:border-b @max-[620px]/content:border-line @max-[620px]/content:px-3 @max-[620px]/content:py-2 @max-[620px]/content:before:text-[0.6875rem] @max-[620px]/content:before:font-bold @max-[620px]/content:before:tracking-[0.08em] @max-[620px]/content:before:text-ink-subtle @max-[620px]/content:before:uppercase @max-[620px]/content:before:content-[attr(data-label)]"
+                                >
                                     <div class="flex items-center gap-3">
                                         <span
                                             class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-subtle text-xs font-bold text-primary"
@@ -454,10 +473,16 @@ function failureMessage(error: unknown, fallback: string): string {
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-ink-muted">
+                                <td
+                                    data-label="Correo"
+                                    class="px-4 py-3 text-ink-muted @max-[620px]/content:flex @max-[620px]/content:flex-col @max-[620px]/content:gap-1 @max-[620px]/content:border-b @max-[620px]/content:border-line @max-[620px]/content:px-3 @max-[620px]/content:py-2 @max-[620px]/content:before:text-[0.6875rem] @max-[620px]/content:before:font-bold @max-[620px]/content:before:tracking-[0.08em] @max-[620px]/content:before:text-ink-subtle @max-[620px]/content:before:uppercase @max-[620px]/content:before:content-[attr(data-label)]"
+                                >
                                     {{ user.email }}
                                 </td>
-                                <td class="px-4 py-3">
+                                <td
+                                    data-label="Roles"
+                                    class="px-4 py-3 @max-[620px]/content:flex @max-[620px]/content:flex-col @max-[620px]/content:gap-1 @max-[620px]/content:border-b @max-[620px]/content:border-line @max-[620px]/content:px-3 @max-[620px]/content:py-2 @max-[620px]/content:before:text-[0.6875rem] @max-[620px]/content:before:font-bold @max-[620px]/content:before:tracking-[0.08em] @max-[620px]/content:before:text-ink-subtle @max-[620px]/content:before:uppercase @max-[620px]/content:before:content-[attr(data-label)]"
+                                >
                                     <div class="flex flex-wrap gap-1.5">
                                         <BaseTag
                                             v-for="role in user.roles"
@@ -473,12 +498,18 @@ function failureMessage(error: unknown, fallback: string): string {
                                     </div>
                                 </td>
                                 <td
-                                    class="px-4 py-3 font-data text-xs text-ink-muted tabular-nums"
+                                    data-label="Alta"
+                                    class="px-4 py-3 font-data text-xs text-ink-muted tabular-nums @max-[620px]/content:flex @max-[620px]/content:flex-col @max-[620px]/content:gap-1 @max-[620px]/content:border-b @max-[620px]/content:border-line @max-[620px]/content:px-3 @max-[620px]/content:py-2 @max-[620px]/content:before:text-[0.6875rem] @max-[620px]/content:before:font-bold @max-[620px]/content:before:tracking-[0.08em] @max-[620px]/content:before:text-ink-subtle @max-[620px]/content:before:uppercase @max-[620px]/content:before:content-[attr(data-label)]"
                                 >
                                     {{ formatDate(user.created_at) }}
                                 </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex justify-end gap-1">
+                                <td
+                                    data-label="Acciones"
+                                    class="px-4 py-3 @max-[620px]/content:flex @max-[620px]/content:flex-col @max-[620px]/content:gap-1 @max-[620px]/content:px-3 @max-[620px]/content:py-2 @max-[620px]/content:before:text-[0.6875rem] @max-[620px]/content:before:font-bold @max-[620px]/content:before:tracking-[0.08em] @max-[620px]/content:before:text-ink-subtle @max-[620px]/content:before:uppercase @max-[620px]/content:before:content-[attr(data-label)]"
+                                >
+                                    <div
+                                        class="flex justify-end gap-1 @max-[620px]/content:justify-start"
+                                    >
                                         <BaseButton
                                             size="sm"
                                             variant="quiet"
@@ -605,14 +636,20 @@ function failureMessage(error: unknown, fallback: string): string {
                             <span class="font-medium">{{ role.name }}</span>
                         </label>
                     </div>
-                    <p
-                        v-if="rolesError()"
-                        id="user-roles-error"
-                        class="text-xs font-medium text-error"
-                        role="alert"
-                    >
-                        {{ rolesError() }}
-                    </p>
+                    <AnimatePresence>
+                        <motion.p
+                            v-if="rolesError()"
+                            id="user-roles-error"
+                            class="text-xs font-medium text-error"
+                            role="alert"
+                            :initial="{ opacity: 0, y: -4 }"
+                            :animate="{ opacity: 1, y: 0 }"
+                            :exit="{ opacity: 0 }"
+                            :transition="{ duration: 0.15 }"
+                        >
+                            {{ rolesError() }}
+                        </motion.p>
+                    </AnimatePresence>
                 </fieldset>
             </form>
 

@@ -36,17 +36,21 @@ function onClick(event: MouseEvent): void {
     }
 }
 
+// Press-scale queda en CSS (active:), no motion-v: "as" es polimórfico
+// (button, Link de Inertia, ancla...) y motion-v no garantiza reenviar el
+// ref/comportamiento de un componente arbitrario. Un :active con transform
+// ya es correcto y performante para este caso — ver mockup .btn:active.
 const buttonClass = computed(() =>
     cn(
         'inline-flex shrink-0 items-center justify-center gap-2 rounded-control border text-sm font-semibold whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform] duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:pointer-events-none disabled:opacity-50',
         props.variant === 'primary' &&
-            'border-primary bg-primary text-primary-contrast shadow-action hover:border-primary-hover hover:bg-primary-hover active:translate-y-px active:border-primary-active active:bg-primary-active',
+            'border-primary bg-primary text-primary-contrast shadow-action hover:border-primary-hover hover:bg-primary-hover active:translate-y-px active:scale-[0.985] active:border-primary-active active:bg-primary-active',
         props.variant === 'secondary' &&
-            'border-line-strong bg-surface text-ink shadow-card hover:border-primary hover:bg-primary-subtle hover:text-primary active:translate-y-px',
+            'border-line-strong bg-surface text-ink shadow-card hover:border-primary hover:bg-primary-subtle hover:text-primary active:translate-y-px active:scale-[0.985]',
         props.variant === 'quiet' &&
-            'border-transparent bg-transparent text-ink-muted hover:bg-surface-subtle hover:text-ink active:translate-y-px',
+            'border-transparent bg-transparent text-ink-muted hover:bg-surface-subtle hover:text-ink active:translate-y-px active:scale-[0.985]',
         props.variant === 'danger' &&
-            'border-error bg-error text-error-contrast shadow-card hover:brightness-90 active:translate-y-px',
+            'border-error bg-error text-error-contrast shadow-card hover:brightness-90 active:translate-y-px active:scale-[0.985]',
         props.size === 'sm' && 'min-h-11 px-3 py-1.5 text-xs',
         props.size === 'md' && 'min-h-11 px-4 py-2.5',
         props.size === 'lg' && 'min-h-12 px-5 py-3 text-base',

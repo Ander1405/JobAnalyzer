@@ -32,7 +32,7 @@ const stateClass = computed(() =>
 <template>
     <article
         :role="type === 'error' ? 'alert' : 'status'"
-        class="flex w-full max-w-sm animate-toast-in items-start gap-3 rounded-card border border-line bg-surface-raised p-4 text-ink shadow-raised"
+        class="flex w-full max-w-sm items-start gap-3 rounded-card border border-line bg-surface-raised p-4 text-ink shadow-raised"
     >
         <span
             :class="

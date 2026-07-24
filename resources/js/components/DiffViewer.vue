@@ -15,14 +15,12 @@ const rows = computed(() => lineDiff(props.before, props.after));
     <div
         class="overflow-x-auto rounded-card border border-line bg-surface shadow-card"
     >
-        <div
-            class="grid grid-cols-2 divide-x divide-gray-200 text-xs dark:divide-gray-800"
-        >
+        <div class="grid grid-cols-2 divide-x divide-line text-xs">
             <template v-for="(row, index) in rows" :key="index">
                 <div
                     :class="
                         cn(
-                            'min-w-0 px-2 py-0.5 font-mono whitespace-pre-wrap',
+                            'min-w-0 px-2 py-0.5 font-data whitespace-pre-wrap',
                             row.type === 'removed' &&
                                 'bg-error-surface text-error',
                         )
@@ -33,7 +31,7 @@ const rows = computed(() => lineDiff(props.before, props.after));
                 <div
                     :class="
                         cn(
-                            'min-w-0 px-2 py-0.5 font-mono whitespace-pre-wrap',
+                            'min-w-0 px-2 py-0.5 font-data whitespace-pre-wrap',
                             row.type === 'added' &&
                                 'bg-success-surface text-success',
                         )

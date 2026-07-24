@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { motion } from 'motion-v';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import DiffViewer from '@/components/DiffViewer.vue';
@@ -349,7 +350,13 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
             </div>
         </div>
 
-        <div v-else-if="job" class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <motion.div
+            v-else-if="job"
+            class="grid grid-cols-1 gap-6 lg:grid-cols-5"
+            :initial="{ opacity: 0, y: 10 }"
+            :animate="{ opacity: 1, y: 0 }"
+            :transition="{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }"
+        >
             <div class="lg:col-span-3">
                 <header
                     class="mb-5 flex items-start gap-4 border-b border-line pb-5"
@@ -361,7 +368,7 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
                     />
                     <div>
                         <h1
-                            class="text-2xl font-semibold tracking-[-0.03em] text-ink"
+                            class="text-step-h2 font-semibold tracking-[-0.03em] text-ink"
                         >
                             {{ job.title }}
                         </h1>
@@ -399,7 +406,7 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
                 </BaseCard>
 
                 <section class="mb-8">
-                    <h2 class="mb-3 text-lg font-semibold text-ink">
+                    <h2 class="mb-3 text-step-h3 font-semibold text-ink">
                         Descripción
                     </h2>
                     <p
@@ -410,7 +417,7 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
                 </section>
 
                 <section v-if="job.required_skills?.length" class="mb-8">
-                    <h2 class="mb-3 text-lg font-semibold text-ink">Skills</h2>
+                    <h2 class="mb-3 text-step-h3 font-semibold text-ink">Skills</h2>
                     <div class="flex flex-wrap gap-2">
                         <BaseTag
                             v-for="(skill, index) in job.required_skills"
@@ -423,7 +430,7 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
                 </section>
 
                 <section v-if="job.benefits?.length" class="mb-8">
-                    <h2 class="mb-3 text-lg font-semibold text-ink">
+                    <h2 class="mb-3 text-step-h3 font-semibold text-ink">
                         Beneficios
                     </h2>
                     <ul class="grid gap-2 text-sm leading-6 text-ink-muted">
@@ -439,7 +446,7 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
 
                 <template v-if="analysis">
                     <section class="mb-8 border-t border-line pt-7">
-                        <h2 class="mb-3 text-lg font-semibold text-ink">
+                        <h2 class="mb-3 text-step-h3 font-semibold text-ink">
                             Tips para postular
                         </h2>
                         <ul class="grid gap-2 text-sm leading-6 text-ink-muted">
@@ -456,7 +463,7 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
                     </section>
 
                     <section class="mb-8 border-t border-line pt-7">
-                        <h2 class="mb-1 text-lg font-semibold text-ink">
+                        <h2 class="mb-1 text-step-h3 font-semibold text-ink">
                             Adaptar el CV
                         </h2>
                         <p class="mb-4 text-sm leading-6 text-ink-muted">
@@ -563,7 +570,7 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
                         v-if="analysis.red_flags?.length"
                         class="mb-8 border-t border-line pt-7"
                     >
-                        <h2 class="mb-3 text-lg font-semibold text-error">
+                        <h2 class="mb-3 text-step-h3 font-semibold text-error">
                             Señales de alerta
                         </h2>
                         <ul class="grid gap-2 text-sm leading-6 text-error">
@@ -624,7 +631,13 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
                         {{ job.error_message }}
                     </p>
 
-                    <dl v-if="analysis" class="grid grid-cols-2 gap-4 text-sm">
+                    <!-- @container/card (de BaseCard): el panel es sticky y
+                         puede quedar angosto en pantallas medianas — 1
+                         columna ahí, 2 cuando el panel tiene espacio. -->
+                    <dl
+                        v-if="analysis"
+                        class="grid grid-cols-1 gap-4 text-sm @sm/card:grid-cols-2"
+                    >
                         <div>
                             <dt class="text-xs font-medium text-ink-subtle">
                                 Idioma
@@ -653,7 +666,7 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
                             </dt>
                             <dd class="mt-1 text-ink">{{ analysis.moneda }}</dd>
                         </div>
-                        <div class="col-span-2">
+                        <div class="@sm/card:col-span-2">
                             <dt class="text-xs font-medium text-ink-subtle">
                                 Inglés requerido
                             </dt>
@@ -723,6 +736,6 @@ async function updateStatus(applicationStatus: ApplicationStatus) {
                     </div>
                 </BaseCard>
             </aside>
-        </div>
+        </motion.div>
     </div>
 </template>

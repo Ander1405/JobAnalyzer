@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AnimatePresence, motion } from 'motion-v';
 import { computed, onMounted, ref } from 'vue';
 import { importMethod as importCv } from '@/actions/App/Http/Controllers/Api/ProfileController';
 import {
@@ -335,6 +336,7 @@ async function saveForm() {
         }
 
         await loadProfiles(selected.value.slug);
+        toast.success('Perfil guardado.');
     } catch {
         error.value = 'No se pudo conectar con el servidor.';
     } finally {
@@ -369,6 +371,7 @@ async function syncFromMarkdown() {
         }
 
         await loadProfiles(selected.value.slug);
+        toast.success('Perfil sincronizado desde el markdown.');
     } catch {
         error.value = 'No se pudo conectar con el servidor.';
     } finally {
@@ -455,6 +458,7 @@ async function applyApproved() {
         reviewUsage.value = null;
 
         await loadProfiles(slug);
+        toast.success('Sugerencias aplicadas.');
     } catch {
         applyError.value = 'No se pudo conectar con el servidor.';
     } finally {
@@ -492,11 +496,14 @@ async function createVariant() {
             return;
         }
 
+        const createdLabel = newVariantLabel.value;
+
         newVariantOpen.value = false;
         newVariantSlug.value = '';
         newVariantLabel.value = '';
 
         await loadProfiles(data.slug);
+        toast.success(`Variante "${createdLabel}" creada.`);
     } catch {
         newVariantError.value = 'No se pudo conectar con el servidor.';
     } finally {
@@ -560,6 +567,7 @@ async function saveAtsVariant() {
         if (response.ok) {
             atsVariantSaved.value = data.slug;
             await loadProfiles(selectedSlug.value ?? undefined);
+            toast.success(`Guardado como variante "${data.slug}".`);
         } else {
             atsError.value = data.message ?? 'No se pudo guardar la variante.';
         }
@@ -609,6 +617,7 @@ async function updatePassword() {
         currentPassword.value = '';
         newPassword.value = '';
         newPasswordConfirmation.value = '';
+        toast.success(data.message ?? 'Contraseña actualizada.');
     } catch {
         passwordError.value = 'No se pudo conectar con el servidor.';
     } finally {
@@ -629,11 +638,13 @@ async function updatePassword() {
                 </div>
                 <div class="min-w-0">
                     <h1
-                        class="text-3xl font-semibold tracking-[-0.04em] text-ink"
+                        class="text-step-h1 font-semibold tracking-[-0.04em] text-ink"
                     >
                         Perfil
                     </h1>
-                    <p class="mt-1 max-w-2xl text-sm leading-6 text-ink-muted">
+                    <p
+                        class="mt-1 max-w-2xl text-step-body leading-6 text-ink-muted"
+                    >
                         Mantén tus datos, variantes de CV y seguridad en un solo
                         lugar.
                     </p>
@@ -655,7 +666,7 @@ async function updatePassword() {
                     <div class="mb-5 border-b border-line pb-4">
                         <h2
                             id="security-heading"
-                            class="text-lg font-semibold text-ink"
+                            class="text-step-h3 font-semibold text-ink"
                         >
                             Cambiar contraseña
                         </h2>
@@ -724,7 +735,7 @@ async function updatePassword() {
                         class="mb-5"
                     >
                         <div
-                            class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"
+                            class="flex flex-col justify-between gap-4 @sm/card:flex-row @sm/card:items-center"
                         >
                             <div class="max-w-2xl">
                                 <h2 class="text-sm font-semibold text-ink">
@@ -738,7 +749,7 @@ async function updatePassword() {
                                 </p>
                             </div>
                             <div
-                                class="flex flex-col items-stretch gap-2 sm:items-end"
+                                class="flex flex-col items-stretch gap-2 @sm/card:items-end"
                             >
                                 <label for="profile-cv-upload" class="sr-only">
                                     Seleccionar hoja de vida
@@ -771,11 +782,11 @@ async function updatePassword() {
 
                     <BaseCard
                         variant="subtle"
-                        class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+                        class="mb-5 flex flex-col gap-4 @sm/card:flex-row @sm/card:items-end @sm/card:justify-between"
                         aria-label="Contexto de variante de perfil"
                     >
                         <div
-                            class="grid min-w-0 flex-1 gap-3 sm:grid-cols-[minmax(0,22rem)_auto] sm:items-end"
+                            class="grid min-w-0 flex-1 gap-3 @sm/card:grid-cols-[minmax(0,22rem)_auto] @sm/card:items-end"
                         >
                             <BaseSelect
                                 v-model="selectedProfileSlug"
@@ -812,48 +823,61 @@ async function updatePassword() {
                         </div>
                     </BaseCard>
 
-                    <BaseCard
-                        v-if="newVariantOpen"
-                        id="new-profile-variant"
-                        class="mb-5"
-                    >
-                        <div class="mb-4">
-                            <h2 class="text-sm font-semibold text-ink">
-                                Crear variante
-                            </h2>
-                            <p class="mt-1 text-xs leading-5 text-ink-muted">
-                                La nueva variante clona el perfil "default".
-                            </p>
-                        </div>
-                        <div
-                            class="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] lg:items-end"
+                    <AnimatePresence>
+                        <motion.div
+                            v-if="newVariantOpen"
+                            :initial="{ opacity: 0, y: -8, height: 0 }"
+                            :animate="{ opacity: 1, y: 0, height: 'auto' }"
+                            :exit="{ opacity: 0, y: -8, height: 0 }"
+                            :transition="{
+                                duration: 0.2,
+                                ease: [0.16, 1, 0.3, 1],
+                            }"
+                            style="overflow: hidden"
                         >
-                            <BaseInput
-                                v-model="newVariantSlug"
-                                label="Slug"
-                                placeholder="backend"
-                            />
-                            <BaseInput
-                                v-model="newVariantLabel"
-                                label="Nombre"
-                                placeholder="Enfoque backend"
-                            />
-                            <BaseButton
-                                :loading="creatingVariant"
-                                loading-label="Creando variante"
-                                @click="createVariant"
-                            >
-                                Crear (clona "default")
-                            </BaseButton>
-                        </div>
-                        <p
-                            v-if="newVariantError"
-                            class="mt-3 rounded-control bg-error-surface px-3 py-2 text-sm font-medium text-error"
-                            role="alert"
-                        >
-                            {{ newVariantError }}
-                        </p>
-                    </BaseCard>
+                            <BaseCard id="new-profile-variant" class="mb-5">
+                                <div class="mb-4">
+                                    <h2 class="text-sm font-semibold text-ink">
+                                        Crear variante
+                                    </h2>
+                                    <p
+                                        class="mt-1 text-xs leading-5 text-ink-muted"
+                                    >
+                                        La nueva variante clona el perfil
+                                        "default".
+                                    </p>
+                                </div>
+                                <div
+                                    class="grid gap-4 @sm/card:grid-cols-2 @lg/card:grid-cols-[1fr_1fr_auto] @lg/card:items-end"
+                                >
+                                    <BaseInput
+                                        v-model="newVariantSlug"
+                                        label="Slug"
+                                        placeholder="backend"
+                                    />
+                                    <BaseInput
+                                        v-model="newVariantLabel"
+                                        label="Nombre"
+                                        placeholder="Enfoque backend"
+                                    />
+                                    <BaseButton
+                                        :loading="creatingVariant"
+                                        loading-label="Creando variante"
+                                        @click="createVariant"
+                                    >
+                                        Crear (clona "default")
+                                    </BaseButton>
+                                </div>
+                                <p
+                                    v-if="newVariantError"
+                                    class="mt-3 rounded-control bg-error-surface px-3 py-2 text-sm font-medium text-error"
+                                    role="alert"
+                                >
+                                    {{ newVariantError }}
+                                </p>
+                            </BaseCard>
+                        </motion.div>
+                    </AnimatePresence>
 
                     <div
                         v-if="loading"
@@ -878,7 +902,7 @@ async function updatePassword() {
                                     <div>
                                         <h2
                                             id="personal-profile-heading"
-                                            class="text-lg font-semibold text-ink"
+                                            class="text-step-h3 font-semibold text-ink"
                                         >
                                             Editar "{{ selected.label }}"
                                         </h2>
@@ -907,7 +931,7 @@ async function updatePassword() {
 
                             <div class="grid gap-5">
                                 <div
-                                    class="grid grid-cols-1 gap-4 sm:grid-cols-2"
+                                    class="grid grid-cols-1 gap-4 @sm/card:grid-cols-2"
                                 >
                                     <BaseInput
                                         v-model="form.label"
@@ -1083,12 +1107,12 @@ async function updatePassword() {
                             aria-labelledby="ai-review-heading"
                         >
                             <div
-                                class="mb-4 flex flex-col justify-between gap-4 border-b border-line pb-4 sm:flex-row sm:items-start"
+                                class="mb-4 flex flex-col justify-between gap-4 border-b border-line pb-4 @sm/card:flex-row @sm/card:items-start"
                             >
                                 <div class="max-w-2xl">
                                     <h2
                                         id="ai-review-heading"
-                                        class="text-lg font-semibold text-ink"
+                                        class="text-step-h3 font-semibold text-ink"
                                     >
                                         Revisión con IA
                                     </h2>
@@ -1242,7 +1266,7 @@ async function updatePassword() {
                                                     </label>
 
                                                     <div
-                                                        class="mt-3 grid gap-3 sm:grid-cols-2"
+                                                        class="mt-3 grid gap-3 @sm/card:grid-cols-2"
                                                     >
                                                         <div
                                                             class="rounded-control border border-line bg-surface p-3"
@@ -1338,7 +1362,7 @@ async function updatePassword() {
                             <div class="mb-4 border-b border-line pb-4">
                                 <h2
                                     id="markdown-editor-heading"
-                                    class="text-lg font-semibold text-ink"
+                                    class="text-step-h3 font-semibold text-ink"
                                 >
                                     Editor Markdown crudo
                                 </h2>
@@ -1389,12 +1413,12 @@ async function updatePassword() {
                             aria-labelledby="ats-heading"
                         >
                             <div
-                                class="mb-5 flex flex-col justify-between gap-4 border-b border-line pb-4 sm:flex-row sm:items-start"
+                                class="mb-5 flex flex-col justify-between gap-4 border-b border-line pb-4 @sm/card:flex-row @sm/card:items-start"
                             >
                                 <div class="max-w-2xl">
                                     <h2
                                         id="ats-heading"
-                                        class="text-lg font-semibold text-ink"
+                                        class="text-step-h3 font-semibold text-ink"
                                     >
                                         Optimización ATS
                                     </h2>
@@ -1429,7 +1453,7 @@ async function updatePassword() {
 
                             <div v-if="atsResult" class="grid gap-6">
                                 <div
-                                    class="grid gap-5 rounded-card border border-line bg-surface-subtle p-4 sm:grid-cols-[auto_1fr] sm:items-center sm:p-5"
+                                    class="grid gap-5 rounded-card border border-line bg-surface-subtle p-4 @sm/card:grid-cols-[auto_1fr] @sm/card:items-center @sm/card:p-5"
                                     role="status"
                                     aria-live="polite"
                                 >
@@ -1445,7 +1469,7 @@ async function updatePassword() {
                                         </p>
                                     </div>
                                     <div
-                                        class="grid gap-3 border-t border-line pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-5"
+                                        class="grid gap-3 border-t border-line pt-4 @sm/card:border-t-0 @sm/card:border-l @sm/card:pt-0 @sm/card:pl-5"
                                     >
                                         <p
                                             class="text-sm leading-6 text-ink-muted"
@@ -1489,7 +1513,7 @@ async function updatePassword() {
                                     </div>
                                 </div>
 
-                                <div class="grid gap-5 lg:grid-cols-2">
+                                <div class="grid gap-5 @lg/card:grid-cols-2">
                                     <section
                                         v-if="atsResult.problemas.length"
                                         class="rounded-card border border-line bg-surface p-4"

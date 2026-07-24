@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AnimatePresence, motion } from 'motion-v';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppIcon from '@/components/AppIcon.vue';
@@ -278,14 +279,14 @@ function formatDateTime(value: string | null): string {
                     <BaseSkeleton shape="text" class="mb-3 h-5 w-1/2" />
                     <BaseSkeleton shape="text" class="w-1/3" />
                 </div>
-                <BaseSkeleton class="hidden h-12 w-48 sm:block" />
+                <BaseSkeleton class="hidden h-12 w-48 @sm/content:block" />
             </div>
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
-                <div class="flex flex-col gap-4 lg:col-span-3">
+            <div class="grid grid-cols-1 gap-6 @lg/content:grid-cols-5">
+                <div class="flex flex-col gap-4 @lg/content:col-span-3">
                     <BaseSkeleton class="h-40 w-full" />
                     <BaseSkeleton class="h-64 w-full" />
                 </div>
-                <div class="flex flex-col gap-4 lg:col-span-2">
+                <div class="flex flex-col gap-4 @lg/content:col-span-2">
                     <BaseSkeleton class="h-56 w-full" />
                     <BaseSkeleton class="h-80 w-full" />
                 </div>
@@ -295,7 +296,7 @@ function formatDateTime(value: string | null): string {
         <template v-else-if="trackedJob">
             <header class="mb-6 border-b border-line pb-6">
                 <div
-                    class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"
+                    class="flex flex-col gap-5 @sm/content:flex-row @sm/content:items-start @sm/content:justify-between"
                 >
                     <div class="flex min-w-0 items-start gap-4">
                         <CompanyLogo
@@ -305,7 +306,7 @@ function formatDateTime(value: string | null): string {
                         />
                         <div class="min-w-0">
                             <h1
-                                class="text-2xl font-semibold tracking-[-0.03em] text-balance text-ink sm:text-3xl"
+                                class="text-step-h1 font-semibold tracking-[-0.03em] text-balance text-ink"
                             >
                                 {{
                                     trackedJob.job?.title ??
@@ -357,8 +358,8 @@ function formatDateTime(value: string | null): string {
                 </div>
             </header>
 
-            <div class="grid grid-cols-1 gap-7 lg:grid-cols-5">
-                <div class="min-w-0 lg:col-span-3">
+            <div class="grid grid-cols-1 gap-7 @lg/content:grid-cols-5">
+                <div class="min-w-0 @lg/content:col-span-3">
                     <BaseCard
                         v-if="trackedJob.job?.ai_analysis?.resumen_ejecutivo"
                         variant="subtle"
@@ -381,7 +382,7 @@ function formatDateTime(value: string | null): string {
                         <div class="mb-4">
                             <h2
                                 id="cv-heading"
-                                class="text-xl font-semibold tracking-[-0.02em] text-ink"
+                                class="text-step-h3 font-semibold tracking-[-0.02em] text-ink"
                             >
                                 CV adaptado a esta vacante
                             </h2>
@@ -439,7 +440,7 @@ function formatDateTime(value: string | null): string {
                         <div class="mb-4">
                             <h2
                                 id="log-heading"
-                                class="text-xl font-semibold tracking-[-0.02em] text-ink"
+                                class="text-step-h3 font-semibold tracking-[-0.02em] text-ink"
                             >
                                 Bitácora
                             </h2>
@@ -463,9 +464,9 @@ function formatDateTime(value: string | null): string {
                                 placeholder="Agrega una nota, entrevista o seguimiento…"
                             />
                             <div
-                                class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+                                class="mt-3 flex flex-col gap-3 @sm/card:flex-row @sm/card:items-end @sm/card:justify-between"
                             >
-                                <div class="w-full sm:max-w-56">
+                                <div class="w-full @sm/card:max-w-56">
                                     <BaseSelect
                                         v-model="commentTypeModel"
                                         name="comment_type"
@@ -488,52 +489,68 @@ function formatDateTime(value: string | null): string {
                             v-if="trackedJob.comments?.length"
                             class="relative flex flex-col gap-5 before:absolute before:top-4 before:bottom-4 before:left-[0.9375rem] before:w-px before:bg-line"
                         >
-                            <li
-                                v-for="comment in trackedJob.comments"
-                                :key="comment.id"
-                                class="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-3"
-                            >
-                                <span
-                                    class="relative z-10 mt-1 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface shadow-card"
-                                    aria-hidden="true"
+                            <!-- Motion sutil: la entrada más reciente de la
+                                 bitácora se desliza al aparecer; ningún nodo
+                                 aquí necesita ref real (focus-trap,
+                                 querySelectorAll), así que motion-v es
+                                 seguro. -->
+                            <AnimatePresence>
+                                <motion.li
+                                    v-for="comment in trackedJob.comments"
+                                    :key="comment.id"
+                                    layout
+                                    :initial="{ opacity: 0, y: 8 }"
+                                    :animate="{ opacity: 1, y: 0 }"
+                                    :transition="{ duration: 0.2 }"
+                                    class="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-3"
                                 >
                                     <span
-                                        class="h-2 w-2 rounded-full bg-primary"
-                                    />
-                                </span>
-                                <div class="min-w-0 border-b border-line pb-5">
+                                        class="relative z-10 mt-1 flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface shadow-card"
+                                        aria-hidden="true"
+                                    >
+                                        <span
+                                            class="h-2 w-2 rounded-full bg-primary"
+                                        />
+                                    </span>
                                     <div
-                                        class="flex flex-wrap items-center gap-2"
+                                        class="min-w-0 border-b border-line pb-5"
                                     >
-                                        <BaseTag
-                                            :tone="commentTone(comment.type)"
+                                        <div
+                                            class="flex flex-wrap items-center gap-2"
                                         >
-                                            {{
-                                                COMMENT_TYPE_LABELS[
-                                                    comment.type
-                                                ]
-                                            }}
-                                        </BaseTag>
-                                        <time
-                                            class="font-data text-xs text-ink-subtle tabular-nums"
-                                            :datetime="
-                                                comment.created_at ?? undefined
-                                            "
+                                            <BaseTag
+                                                :tone="
+                                                    commentTone(comment.type)
+                                                "
+                                            >
+                                                {{
+                                                    COMMENT_TYPE_LABELS[
+                                                        comment.type
+                                                    ]
+                                                }}
+                                            </BaseTag>
+                                            <time
+                                                class="font-data text-xs text-ink-subtle tabular-nums"
+                                                :datetime="
+                                                    comment.created_at ??
+                                                    undefined
+                                                "
+                                            >
+                                                {{
+                                                    formatDateTime(
+                                                        comment.created_at,
+                                                    )
+                                                }}
+                                            </time>
+                                        </div>
+                                        <p
+                                            class="mt-2 text-sm leading-6 break-words whitespace-pre-line text-ink"
                                         >
-                                            {{
-                                                formatDateTime(
-                                                    comment.created_at,
-                                                )
-                                            }}
-                                        </time>
+                                            {{ comment.body }}
+                                        </p>
                                     </div>
-                                    <p
-                                        class="mt-2 text-sm leading-6 break-words whitespace-pre-line text-ink"
-                                    >
-                                        {{ comment.body }}
-                                    </p>
-                                </div>
-                            </li>
+                                </motion.li>
+                            </AnimatePresence>
                         </ol>
 
                         <EmptyState
@@ -549,17 +566,23 @@ function formatDateTime(value: string | null): string {
                     </section>
                 </div>
 
-                <aside class="min-w-0 lg:col-span-2">
-                    <div class="flex flex-col gap-5 lg:sticky lg:top-6">
+                <aside class="min-w-0 @lg/content:col-span-2">
+                    <div
+                        class="flex flex-col gap-5 @lg/content:sticky @lg/content:top-6"
+                    >
                         <BaseCard
                             v-if="trackedJob.job?.ai_analysis"
                             class="flex flex-col items-center gap-4"
                         >
                             <div class="w-full border-b border-line pb-3">
-                                <p class="text-xs font-semibold text-primary">
+                                <p
+                                    class="text-step-eyebrow font-semibold text-primary"
+                                >
                                     INSTRUMENTO DE ENCAJE
                                 </p>
-                                <h2 class="mt-1 text-lg font-semibold text-ink">
+                                <h2
+                                    class="mt-1 text-step-h3 font-semibold text-ink"
+                                >
                                     Compatibilidad con tu perfil
                                 </h2>
                             </div>
@@ -578,7 +601,7 @@ function formatDateTime(value: string | null): string {
                                 <div>
                                     <h2
                                         id="application-controls-heading"
-                                        class="text-lg font-semibold text-ink"
+                                        class="text-step-h3 font-semibold text-ink"
                                     >
                                         Control de aplicación
                                     </h2>
