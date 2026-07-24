@@ -34,7 +34,7 @@ class JobController extends Controller
 
         if ($request->filled('min_match')) {
             $minMatch = (int) $request->query('min_match', 75);
-            $query->whereRaw("CAST(json_extract(ai_analysis, '$.match_score') AS INTEGER) >= ?", [$minMatch]);
+            $query->whereRaw(Job::matchScoreCastSql().' >= ?', [$minMatch]);
         }
 
         $perPage = max(1, min(500, (int) $request->query('per_page', 20)));
@@ -42,7 +42,7 @@ class JobController extends Controller
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = min(max(1, (int) $request->query('page', 1)), $lastPage);
 
-        $jobs = $query->orderByRaw("CAST(json_extract(ai_analysis, '$.match_score') AS INTEGER) DESC")
+        $jobs = $query->orderByRaw(Job::matchScoreCastSql().' DESC')
             ->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([

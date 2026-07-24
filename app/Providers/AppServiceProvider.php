@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Models\TrackedJob;
+use App\Models\User;
 use App\Observers\TrackedJobObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -28,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAnalysisWorkers();
+
+        Gate::before(
+            fn (User $user, string $ability): ?bool => $user->hasRole('admin') ? true : null,
+        );
 
         TrackedJob::observe(TrackedJobObserver::class);
     }

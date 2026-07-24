@@ -21,7 +21,7 @@ use Throwable;
  */
 class ProfileReviewer
 {
-    private const SYSTEM_PROMPT = <<<'PROMPT'
+    private const BASE_PROMPT = <<<'PROMPT'
 Eres un editor experto de CVs para desarrolladores de software en Latinoamérica.
 Recibirás el CV ORIGINAL (texto crudo extraído del archivo) y el PERFIL PARSEADO
 (Markdown generado automáticamente por un parser determinista basado en reglas).
@@ -57,7 +57,16 @@ Reglas:
   "english_level" (nivel CEFR exacto: A1|A2|B1|B2|C1|C2, nunca uses otra escala),
   "index" siempre es null y "action" siempre es "replace".
 - Si no encuentras nada que corregir o mejorar, responde con "suggestions": [].
+- En las sugerencias category="improvement", el texto de "suggested" se rige por la
+  VOZ HUMANA de abajo: nada de muletillas, cada reformulación anclada en un hecho ya
+  presente en el CV ORIGINAL. Las de category="correction" solo restauran fielmente
+  lo que el parser omitió o transcribió mal, sin aplicar esta voz.
 PROMPT;
+
+    private static function systemPrompt(): string
+    {
+        return self::BASE_PROMPT."\n\n".PromptCraft::humanVoice();
+    }
 
     /**
      * @var array<int, string>
@@ -166,7 +175,7 @@ PROMPT;
     private function attempt(AIProvider $provider, Profile $profile): ?ProfileReviewResult
     {
         try {
-            $completion = $provider->complete(self::SYSTEM_PROMPT, $this->userPrompt($profile));
+            $completion = $provider->complete(self::systemPrompt(), $this->userPrompt($profile));
 
             return new ProfileReviewResult(
                 $this->parseReviewResponse($completion->text),

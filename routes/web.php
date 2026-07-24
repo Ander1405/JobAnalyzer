@@ -1,12 +1,19 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect('/marketplace');
+    }
+
+    return Inertia::render('Marketing/Landing');
+})->name('home');
 
 Route::middleware('auth')->group(function () {
-    Route::redirect('/', '/marketplace');
-
     Route::inertia('/{any}', 'App/Shell')
-        ->where('any', '^(marketplace|tracking|profile)(/.*)?$')
+        ->where('any', '^(marketplace|tracking|profile|admin)(/.*)?$')
         ->name('app.shell');
 });
 

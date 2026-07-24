@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AiProviderSelector from '@/components/AiProviderSelector.vue';
 import AppIcon from '@/components/AppIcon.vue';
@@ -14,6 +14,8 @@ import {
     BaseTag,
     EmptyState,
 } from '@/components/ui';
+import { getMatchScoreMeta  } from '@/lib/designSystem';
+import type {MatchScoreTier} from '@/lib/designSystem';
 import { usePersistedRef } from '@/lib/persisted';
 import { useToast } from '@/lib/toast';
 import { formatCost, formatDuration } from '@/lib/utils';
@@ -46,6 +48,89 @@ const filters = usePersistedRef<MarketplaceFiltersType>('marketplace:filters', {
 });
 
 const pendingAnalysis = computed(() => meta.value?.pending_analysis ?? 0);
+
+const entered = ref(false);
+
+const TIER_BAR: Record<MatchScoreTier, string> = {
+    excellent: 'bg-score-excellent',
+    'very-good': 'bg-score-very-good',
+    acceptable: 'bg-score-acceptable',
+    low: 'bg-score-low',
+    unscored: 'bg-line-strong',
+};
+
+const TIER_ORDER: MatchScoreTier[] = [
+    'excellent',
+    'very-good',
+    'acceptable',
+    'low',
+    'unscored',
+];
+
+// Reparte las vacantes de la página actual por franja de encaje para el medidor
+// del encabezado. Reusa getMatchScoreMeta para no duplicar los umbrales.
+const distribution = computed(() => {
+    const buckets = new Map<
+        MatchScoreTier,
+        { meta: ReturnType<typeof getMatchScoreMeta>; count: number }
+    >();
+
+    for (const job of jobs.value) {
+        const meta = getMatchScoreMeta(job.ai_analysis?.match_score ?? null);
+        const entry = buckets.get(meta.tier) ?? { meta, count: 0 };
+        entry.count += 1;
+        buckets.set(meta.tier, entry);
+    }
+
+    return TIER_ORDER.filter((tier) => buckets.has(tier)).map((tier) =>
+        buckets.get(tier)!,
+    );
+});
+
+const displayTotal = ref(0);
+let countFrame: number | undefined;
+
+function prefersReducedMotion(): boolean {
+    return (
+        typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    );
+}
+
+// El total sube contando en vez de aparecer de golpe: da vida al encabezado y
+// hace legible cuándo cambió el conjunto tras filtrar o paginar.
+function animateTotal(target: number): void {
+    if (countFrame) {
+        cancelAnimationFrame(countFrame);
+    }
+
+    if (typeof window === 'undefined' || prefersReducedMotion()) {
+        displayTotal.value = target;
+
+        return;
+    }
+
+    const from = displayTotal.value;
+    const start = performance.now();
+    const duration = 600;
+
+    const tick = (now: number) => {
+        const progress = Math.min(1, (now - start) / duration);
+        const eased = 1 - (1 - progress) ** 3;
+        displayTotal.value = Math.round(from + (target - from) * eased);
+
+        if (progress < 1) {
+            countFrame = requestAnimationFrame(tick);
+        }
+    };
+
+    countFrame = requestAnimationFrame(tick);
+}
+
+watch(
+    () => meta.value?.total ?? 0,
+    (total) => animateTotal(total),
+);
 
 const selectedIds = ref<Set<number>>(new Set());
 const trackingIds = ref<Set<number>>(new Set());
@@ -83,6 +168,15 @@ watch(
 onMounted(() => {
     loadJobs();
     loadSources();
+    requestAnimationFrame(() => {
+        entered.value = true;
+    });
+});
+
+onBeforeUnmount(() => {
+    if (countFrame) {
+        cancelAnimationFrame(countFrame);
+    }
 });
 
 function buildParams(
@@ -468,30 +562,128 @@ async function bulkTrack() {
 
 <template>
     <div class="mx-auto max-w-7xl">
-        <header class="mb-7 border-b border-line pb-5">
-            <p class="mb-2 text-xs font-semibold text-primary">
-                PANEL DE DECISIÓN
-            </p>
-            <div class="flex flex-wrap items-end justify-between gap-4">
-                <div>
-                    <h1
-                        class="text-3xl font-semibold tracking-[-0.04em] text-ink"
-                    >
-                        Marketplace
-                    </h1>
-                    <p class="mt-1 text-sm text-ink-muted">
-                        {{
-                            meta
-                                ? `${meta.total} vacantes disponibles para revisar y priorizar.`
-                                : 'Revisa el encaje de cada vacante antes de decidir.'
-                        }}
-                    </p>
+        <header
+            class="mb-6 transition-all duration-500 ease-signal-out"
+            :class="
+                entered
+                    ? 'translate-y-0 opacity-100'
+                    : 'translate-y-3 opacity-0'
+            "
+        >
+            <div
+                class="rounded-panel border border-line bg-surface p-5 shadow-card sm:p-6"
+            >
+                <div
+                    class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+                >
+                    <div class="max-w-xl">
+                        <p
+                            class="mb-3 inline-flex items-center gap-2 rounded-full bg-primary-subtle px-2.5 py-1 text-[0.6875rem] font-semibold tracking-[0.12em] text-primary uppercase"
+                        >
+                            <span
+                                class="inline-block h-1.5 w-1.5 rounded-full bg-primary"
+                            />
+                            Panel de decisión
+                        </p>
+                        <h1
+                            class="text-3xl font-semibold tracking-[-0.04em] text-ink sm:text-4xl"
+                        >
+                            Marketplace
+                        </h1>
+                        <p class="mt-2 text-sm text-ink-muted">
+                            <template v-if="meta">
+                                <span
+                                    class="font-data font-semibold text-ink tabular-nums"
+                                    >{{ displayTotal }}</span
+                                >
+                                vacantes en tu radar, ordenadas por qué tanto
+                                encajan con tu perfil.
+                            </template>
+                            <template v-else>
+                                Revisa el encaje de cada vacante antes de
+                                decidir.
+                            </template>
+                        </p>
+                        <p
+                            v-if="pendingAnalysis > 0"
+                            class="mt-3 inline-flex items-center gap-2 rounded-control bg-warning-surface px-3 py-1.5 text-xs font-medium text-warning"
+                        >
+                            <span
+                                class="inline-block h-1.5 w-1.5 rounded-full bg-warning"
+                            />
+                            {{ pendingAnalysis }} sin analizar todavía · su
+                            encaje aún no cuenta aquí
+                        </p>
+                    </div>
+
+                    <div v-if="jobs.length > 0" class="w-full lg:w-80">
+                        <div class="mb-2 flex items-baseline justify-between">
+                            <span class="text-xs font-semibold text-ink">
+                                Encaje · esta página
+                            </span>
+                            <span
+                                class="font-data text-xs text-ink-muted tabular-nums"
+                            >
+                                {{ jobs.length }} vacante{{
+                                    jobs.length === 1 ? '' : 's'
+                                }}
+                            </span>
+                        </div>
+                        <div
+                            class="meter-sweep flex h-2.5 overflow-hidden rounded-full bg-surface-subtle"
+                        >
+                            <div
+                                v-for="segment in distribution"
+                                :key="segment.meta.tier"
+                                :class="TIER_BAR[segment.meta.tier]"
+                                class="transition-[width] duration-500 ease-signal-out"
+                                :style="{
+                                    width: `${(segment.count / jobs.length) * 100}%`,
+                                }"
+                            />
+                        </div>
+                        <ul class="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+                            <li
+                                v-for="segment in distribution"
+                                :key="segment.meta.tier"
+                                class="inline-flex items-center gap-1.5 text-xs"
+                            >
+                                <span
+                                    class="inline-block h-2 w-2 rounded-full"
+                                    :class="TIER_BAR[segment.meta.tier]"
+                                />
+                                <span
+                                    class="font-medium"
+                                    :class="segment.meta.textClass"
+                                >
+                                    {{ segment.meta.label }}
+                                </span>
+                                <span
+                                    class="font-data text-ink-muted tabular-nums"
+                                >
+                                    {{ segment.count }}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                    <BaseTag v-else tone="primary">
+                        Señales de tu perfil activas
+                    </BaseTag>
                 </div>
-                <BaseTag tone="primary">Señales de tu perfil activas</BaseTag>
             </div>
         </header>
 
-        <AiProviderSelector class="mb-5" />
+        <div
+            class="mb-5 transition-all duration-500 ease-signal-out"
+            :class="
+                entered
+                    ? 'translate-y-0 opacity-100'
+                    : 'translate-y-3 opacity-0'
+            "
+            :style="{ transitionDelay: entered ? '70ms' : '0ms' }"
+        >
+            <AiProviderSelector />
+        </div>
 
         <BaseCard
             v-if="fetchProgress"
@@ -581,17 +773,26 @@ async function bulkTrack() {
             </BaseButton>
         </BaseCard>
 
-        <MarketplaceFilters
-            v-model:filters="filters"
-            v-model:view-mode="viewMode"
-            :sources="sources"
-            :fetching="fetching"
-            :analyzing="analyzing"
-            :pending-analysis="pendingAnalysis"
-            class="mb-4"
-            @search-new="searchNew"
-            @analyze-pending="analyzePending"
-        />
+        <div
+            class="mb-4 transition-all duration-500 ease-signal-out"
+            :class="
+                entered
+                    ? 'translate-y-0 opacity-100'
+                    : 'translate-y-3 opacity-0'
+            "
+            :style="{ transitionDelay: entered ? '140ms' : '0ms' }"
+        >
+            <MarketplaceFilters
+                v-model:filters="filters"
+                v-model:view-mode="viewMode"
+                :sources="sources"
+                :fetching="fetching"
+                :analyzing="analyzing"
+                :pending-analysis="pendingAnalysis"
+                @search-new="searchNew"
+                @analyze-pending="analyzePending"
+            />
+        </div>
 
         <BaseCard
             v-if="selectedIds.size > 0"
@@ -658,21 +859,28 @@ async function bulkTrack() {
                     </BaseButton>
                 </template>
             </EmptyState>
-            <div
+            <TransitionGroup
                 v-else
+                tag="div"
+                name="jobcard"
                 class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
             >
-                <JobCard
-                    v-for="job in jobs"
+                <div
+                    v-for="(job, index) in jobs"
                     :key="job.id"
-                    :job="job"
-                    :selected="selectedIds.has(job.id)"
-                    :tracking="trackingIds.has(job.id)"
-                    @open="openJob(job)"
-                    @toggle-select="toggleSelect(job)"
-                    @quick-track="quickTrack(job)"
-                />
-            </div>
+                    class="h-full"
+                    :style="{ transitionDelay: `${Math.min(index, 6) * 45}ms` }"
+                >
+                    <JobCard
+                        :job="job"
+                        :selected="selectedIds.has(job.id)"
+                        :tracking="trackingIds.has(job.id)"
+                        @open="openJob(job)"
+                        @toggle-select="toggleSelect(job)"
+                        @quick-track="quickTrack(job)"
+                    />
+                </div>
+            </TransitionGroup>
 
             <div
                 v-if="meta && meta.total > 0"
@@ -725,3 +933,39 @@ async function bulkTrack() {
         />
     </div>
 </template>
+
+<style scoped>
+/* Stagger de las tarjetas al entrar la lista: acuse de resultado, no espera. */
+.jobcard-enter-active {
+    transition:
+        opacity 0.42s var(--ease-signal-out),
+        transform 0.42s var(--ease-signal-out);
+}
+
+.jobcard-enter-from {
+    opacity: 0;
+    transform: translateY(0.6rem);
+}
+
+/* El medidor de encaje se abre de un barrido cuando aparece. */
+.meter-sweep {
+    transform-origin: left;
+    animation: meter-sweep 0.7s var(--ease-signal-out) both;
+}
+
+@keyframes meter-sweep {
+    from {
+        transform: scaleX(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .jobcard-enter-active {
+        transition: none;
+    }
+
+    .meter-sweep {
+        animation: none;
+    }
+}
+</style>

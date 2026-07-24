@@ -20,7 +20,7 @@ use Throwable;
  */
 class CvTailorer
 {
-    private const SYSTEM_PROMPT = <<<'PROMPT'
+    private const BASE_PROMPT = <<<'PROMPT'
 Eres un editor experto de CVs para desarrolladores de software en Latinoamérica.
 Recibirás el PERFIL actual de un candidato (headline, summary, experience, skills),
 una VACANTE específica, y una lista de AJUSTES SELECCIONADOS que el candidato aprobó
@@ -48,9 +48,17 @@ Reglas:
 - experience y skills deben representar la misma información que el PERFIL
   original (mismas empresas, cargos, tecnologías); no agregues ni quites hechos,
   solo reordena o reformula.
+- Todo texto reescrito se rige por la VOZ HUMANA de abajo: headline y summary no
+  pueden caer en muletillas de reclutamiento; cada reformulación se ancla en un
+  hecho concreto del PERFIL relevante a esta vacante, no en adjetivos.
 PROMPT;
 
     private ?string $lastError = null;
+
+    private static function systemPrompt(): string
+    {
+        return self::BASE_PROMPT."\n\n".PromptCraft::humanVoice()."\n\n".PromptCraft::authenticityGuard();
+    }
 
     public function __construct(private readonly AIProviderFactory $factory) {}
 
@@ -77,7 +85,7 @@ PROMPT;
     private function attempt(AIProvider $provider, Profile $profile, Job $job, array $selectedItems): ?CvTailorResult
     {
         try {
-            $completion = $provider->complete(self::SYSTEM_PROMPT, $this->userPrompt($profile, $job, $selectedItems));
+            $completion = $provider->complete(self::systemPrompt(), $this->userPrompt($profile, $job, $selectedItems));
 
             return $this->parseResponse($completion->text, $completion->usage, $completion->model);
         } catch (Throwable $exception) {

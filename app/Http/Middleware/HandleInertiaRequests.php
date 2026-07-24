@@ -35,11 +35,16 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user ? [
+                    ...$user->withoutRelations()->toArray(),
+                    'roles' => $user->exists ? $user->getRoleNames()->values() : [],
+                ] : null,
             ],
             'matchScoreAlertThreshold' => config('jobhunter.match_score_alert_threshold'),
             'minMatchToPublish' => config('jobhunter.min_match_to_publish', 75),

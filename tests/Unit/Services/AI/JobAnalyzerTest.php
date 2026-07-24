@@ -123,6 +123,8 @@ class JobAnalyzerTest extends TestCase
 
     public function test_it_persists_ai_inferred_metadata_only_when_the_source_left_it_empty(): void
     {
+        Profile::factory()->active()->create();
+
         $this->aiPayload = array_merge($this->aiPayload, [
             'seniority_inferido' => 'Senior',
             'modalidad_inferida' => 'Remoto',

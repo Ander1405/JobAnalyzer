@@ -13,7 +13,9 @@ export type AppIconName =
     | 'retry'
     | 'sun'
     | 'system'
-    | 'tracking';
+    | 'tracking'
+    | 'roles'
+    | 'users';
 
 defineProps<{
     name: AppIconName;
@@ -61,6 +63,20 @@ defineProps<{
             <path d="M6 3h9l3 3v15H6zM15 3v4h4" />
             <circle cx="11.5" cy="11.5" r="2.25" />
             <path d="M8.5 17c.7-1.7 1.7-2.5 3-2.5s2.3.8 3 2.5" />
+        </template>
+
+        <template v-else-if="name === 'users'">
+            <circle cx="9" cy="8" r="3" />
+            <path
+                d="M3.5 19c.5-3.2 2.3-5 5.5-5s5 1.8 5.5 5M15 5.5a3 3 0 0 1 0 5.5M15.5 14c2.8.2 4.5 1.8 5 5"
+            />
+        </template>
+
+        <template v-else-if="name === 'roles'">
+            <path d="M4 5h10M4 12h7M4 19h10" />
+            <path
+                d="m16 11 2-2 2 2v3.5c0 2.2-1.3 4.1-3 4.8-1.7-.7-3-2.6-3-4.8V11l2-2"
+            />
         </template>
 
         <template v-else-if="name === 'sun'">

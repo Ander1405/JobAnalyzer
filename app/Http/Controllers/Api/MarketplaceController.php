@@ -64,7 +64,7 @@ class MarketplaceController extends Controller
             // The CAST matters: json_extract yields text, and SQLite sorts every
             // text value above every number, so the comparison would be nonsense.
             $query->whereRaw(
-                "CAST(json_extract(ai_analysis, '$.match_score') AS INTEGER) >= ?",
+                Job::matchScoreCastSql().' >= ?',
                 [(int) $request->query('min_match')],
             );
         }
@@ -72,7 +72,7 @@ class MarketplaceController extends Controller
         match ($request->query('sort', 'match')) {
             'recent' => $query->orderByDesc('created_at'),
             'salary' => $query->orderByDesc('salary_raw'),
-            default => $query->orderByRaw("CAST(json_extract(ai_analysis, '$.match_score') AS INTEGER) DESC"),
+            default => $query->orderByRaw(Job::matchScoreCastSql().' DESC'),
         };
 
         $perPage = max(1, min(500, (int) $request->query('per_page', 20)));

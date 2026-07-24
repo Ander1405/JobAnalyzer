@@ -4,6 +4,17 @@ const router = createRouter({
     history: createWebHistory(),
     routes: [
         { path: '/', redirect: '/marketplace' },
+        { path: '/admin', redirect: '/admin/users' },
+        {
+            path: '/admin/users',
+            name: 'admin.users',
+            component: () => import('@/views/Admin/UsersView.vue'),
+        },
+        {
+            path: '/admin/roles',
+            name: 'admin.roles',
+            component: () => import('@/views/Admin/RolesView.vue'),
+        },
         {
             path: '/marketplace',
             name: 'marketplace',

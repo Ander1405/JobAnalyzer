@@ -25,6 +25,10 @@ createInertiaApp({
     },
     setup({ el, App, props, plugin }) {
         inertiaRouter.on('navigate', (event) => {
+            if (event.detail.page.component !== 'App/Shell') {
+                return;
+            }
+
             const targetUrl = new URL(
                 event.detail.page.url,
                 window.location.origin,

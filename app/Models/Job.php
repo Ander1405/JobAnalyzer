@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -118,6 +119,17 @@ class Job extends Model
             'required_skills' => 'array',
             'applicants_count' => 'integer',
         ];
+    }
+
+    /**
+     * SQLite's CAST(... AS INTEGER) has no equivalent name in MySQL, which
+     * only recognizes SIGNED/UNSIGNED for integer casts — hence driver-aware.
+     */
+    public static function matchScoreCastSql(): string
+    {
+        $castType = DB::connection()->getDriverName() === 'sqlite' ? 'INTEGER' : 'UNSIGNED';
+
+        return "CAST(json_extract(ai_analysis, '$.match_score') AS {$castType})";
     }
 
     /**

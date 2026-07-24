@@ -10,10 +10,17 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ProfileReviewController;
 use App\Http\Controllers\Api\ProfileTailorController;
 use App\Http\Controllers\Api\ProfileVariantController;
+use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\TrackingController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth')->group(function () {
+    Route::prefix('admin')->middleware('admin')->name('api.admin.')->group(function () {
+        Route::apiResource('users', UserController::class)->except('show');
+        Route::apiResource('roles', RoleController::class)->except('show');
+    });
+
     Route::get('jobs', [JobController::class, 'index'])->name('api.jobs.index');
     Route::get('jobs/sources', [JobController::class, 'sources'])->name('api.jobs.sources');
     Route::get('jobs/{job}', [JobController::class, 'show'])->name('api.jobs.show');

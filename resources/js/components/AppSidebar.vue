@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AppIcon from '@/components/AppIcon.vue';
 import type { AppIconName } from '@/components/AppIcon.vue';
@@ -23,17 +24,47 @@ function logout() {
     router.post('/logout');
 }
 
-const items: ReadonlyArray<{
-    name: 'marketplace' | 'tracking' | 'profile';
+type NavItem = {
+    name: 'marketplace' | 'tracking' | 'profile' | 'users' | 'roles';
+    path: string;
     label: string;
     icon: AppIconName;
-}> = [
-    { name: 'marketplace', label: 'Marketplace', icon: 'marketplace' },
-    { name: 'tracking', label: 'Mis vacantes', icon: 'tracking' },
-    { name: 'profile', label: 'Mi perfil', icon: 'profile' },
+};
+
+const items: ReadonlyArray<NavItem> = [
+    {
+        name: 'marketplace',
+        path: '/marketplace',
+        label: 'Marketplace',
+        icon: 'marketplace',
+    },
+    {
+        name: 'tracking',
+        path: '/tracking',
+        label: 'Mis vacantes',
+        icon: 'tracking',
+    },
+    { name: 'profile', path: '/profile', label: 'Mi perfil', icon: 'profile' },
 ] as const;
 
-function badgeFor(name: (typeof items)[number]['name']): number {
+const adminItems: ReadonlyArray<NavItem> = [
+    {
+        name: 'users',
+        path: '/admin/users',
+        label: 'Usuarios',
+        icon: 'users',
+    },
+    {
+        name: 'roles',
+        path: '/admin/roles',
+        label: 'Roles y permisos',
+        icon: 'roles',
+    },
+] as const;
+
+const isAdmin = computed(() => page.props.auth.user.roles.includes('admin'));
+
+function badgeFor(name: NavItem['name']): number {
     if (name === 'marketplace') {
         return props.badges.marketplace;
     }
@@ -45,14 +76,14 @@ function badgeFor(name: (typeof items)[number]['name']): number {
     return 0;
 }
 
-function isActive(name: (typeof items)[number]['name']): boolean {
-    return route.path === `/${name}` || route.path.startsWith(`/${name}/`);
+function isActive(path: string): boolean {
+    return route.path === path || route.path.startsWith(`${path}/`);
 }
 </script>
 
 <template>
     <nav
-        class="flex h-full flex-col gap-1 p-3 text-slate-300"
+        class="flex h-full flex-col gap-1 overflow-y-auto p-3 text-slate-300"
         aria-label="Navegación principal"
     >
         <div
@@ -88,11 +119,11 @@ function isActive(name: (typeof items)[number]['name']): boolean {
         <router-link
             v-for="item in items"
             :key="item.name"
-            :to="`/${item.name}`"
+            :to="item.path"
             :class="
                 cn(
                     'relative flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-semibold transition-[color,background-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-200',
-                    isActive(item.name)
+                    isActive(item.path)
                         ? 'bg-signal-500 text-white shadow-[0_8px_18px_rgba(23,73,233,0.25)]'
                         : 'text-slate-300 hover:bg-slate-800 hover:text-white',
                     collapsed && 'justify-center px-0',
@@ -105,7 +136,7 @@ function isActive(name: (typeof items)[number]['name']): boolean {
             <AppIcon
                 :name="item.icon"
                 class="h-5 w-5 shrink-0"
-                :class="isActive(item.name) ? 'text-white' : 'text-signal-200'"
+                :class="isActive(item.path) ? 'text-white' : 'text-signal-200'"
             />
             <span v-if="!collapsed" class="flex-1">{{ item.label }}</span>
             <span
@@ -120,6 +151,54 @@ function isActive(name: (typeof items)[number]['name']): boolean {
                 aria-hidden="true"
             />
         </router-link>
+
+        <div
+            v-if="isAdmin"
+            class="mt-5 border-t border-slate-800 pt-4"
+            :class="collapsed && 'px-2'"
+        >
+            <p
+                v-if="!collapsed"
+                class="mb-2 flex items-center gap-2 px-3 text-[0.6875rem] font-bold tracking-[0.12em] text-slate-500 uppercase"
+            >
+                <AppIcon name="users" class="h-4 w-4" />
+                Administración
+            </p>
+            <span v-else class="sr-only">Administración</span>
+
+            <div class="flex flex-col gap-1">
+                <router-link
+                    v-for="item in adminItems"
+                    :key="item.name"
+                    :to="item.path"
+                    :class="
+                        cn(
+                            'relative flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-semibold transition-[color,background-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal-200',
+                            isActive(item.path)
+                                ? 'bg-signal-500 text-white shadow-[0_8px_18px_rgba(23,73,233,0.25)]'
+                                : 'text-slate-300 hover:bg-slate-800 hover:text-white',
+                            collapsed && 'justify-center px-0',
+                        )
+                    "
+                    :aria-label="collapsed ? item.label : undefined"
+                    :title="collapsed ? item.label : undefined"
+                    @click="emit('navigate')"
+                >
+                    <AppIcon
+                        :name="item.icon"
+                        class="h-5 w-5 shrink-0"
+                        :class="
+                            isActive(item.path)
+                                ? 'text-white'
+                                : 'text-signal-200'
+                        "
+                    />
+                    <span v-if="!collapsed" class="flex-1">{{
+                        item.label
+                    }}</span>
+                </router-link>
+            </div>
+        </div>
 
         <div class="mt-auto flex flex-col gap-2 border-t border-slate-800 pt-3">
             <ThemeSwitcher :collapsed="collapsed" />

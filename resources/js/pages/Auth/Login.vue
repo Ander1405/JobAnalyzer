@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import AppIcon from '@/components/AppIcon.vue';
+import { BaseButton, BaseCard, BaseInput } from '@/components/ui';
+import GuestLayout from '@/layouts/GuestLayout.vue';
 
 const form = useForm({
     email: '',
@@ -15,67 +18,115 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Iniciar sesión" />
+    <GuestLayout>
+        <Head title="Iniciar sesión" />
 
-    <div
-        class="flex min-h-screen items-center justify-center bg-[#FDFDFC] px-4 text-[#1b1b18] dark:bg-[#0a0a0a] dark:text-[#EDEDEC]"
-    >
-        <div
-            class="w-full max-w-sm rounded-lg border border-gray-200 p-6 dark:border-gray-800"
+        <section
+            class="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-center lg:px-8 lg:py-24"
         >
-            <h1 class="mb-6 text-xl font-semibold">JobHunter</h1>
+            <div class="max-w-xl">
+                <div
+                    class="mb-7 inline-flex items-center gap-2 rounded-control bg-primary-subtle px-3 py-2 text-sm font-semibold text-primary"
+                >
+                    <AppIcon name="brand" class="h-4 w-4" />
+                    Tu búsqueda, bajo control
+                </div>
+                <h1
+                    class="max-w-lg text-4xl leading-[1.04] font-semibold tracking-[-0.04em] text-balance sm:text-5xl"
+                >
+                    Retoma tu próxima oportunidad.
+                </h1>
+                <p class="mt-5 max-w-lg text-lg leading-8 text-ink-muted">
+                    Revisa tus mejores matches, continúa tus postulaciones y
+                    adapta tu CV sin perder el contexto.
+                </p>
+                <div
+                    class="mt-9 grid max-w-lg gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-3"
+                >
+                    <div class="bg-surface p-4">
+                        <p class="font-data text-lg font-semibold text-primary">
+                            Match
+                        </p>
+                        <p class="mt-1 text-sm text-ink-muted">
+                            Prioriza mejor
+                        </p>
+                    </div>
+                    <div class="bg-surface p-4">
+                        <p class="font-data text-lg font-semibold text-primary">
+                            Tracking
+                        </p>
+                        <p class="mt-1 text-sm text-ink-muted">
+                            Sigue el avance
+                        </p>
+                    </div>
+                    <div class="bg-surface p-4">
+                        <p class="font-data text-lg font-semibold text-primary">
+                            CV + ATS
+                        </p>
+                        <p class="mt-1 text-sm text-ink-muted">Adapta con IA</p>
+                    </div>
+                </div>
+            </div>
 
-            <form class="flex flex-col gap-4" @submit.prevent="submit">
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Email</span>
-                    <input
+            <BaseCard as="div" variant="raised" class="p-6 sm:p-8">
+                <div class="mb-7">
+                    <p class="text-sm font-semibold text-primary">Bienvenido</p>
+                    <h2 class="mt-2 text-2xl font-semibold tracking-[-0.03em]">
+                        Inicia sesión en JobHunter
+                    </h2>
+                </div>
+
+                <form class="grid gap-5" @submit.prevent="submit">
+                    <BaseInput
                         v-model="form.email"
+                        label="Email"
                         type="email"
-                        autofocus
                         autocomplete="username"
-                        class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
+                        required
+                        :error="form.errors.email"
                     />
-                    <span
-                        v-if="form.errors.email"
-                        class="text-xs text-red-600 dark:text-red-400"
-                    >
-                        {{ form.errors.email }}
-                    </span>
-                </label>
 
-                <label class="flex flex-col gap-1 text-sm">
-                    <span class="text-gray-600 dark:text-gray-400"
-                        >Contraseña</span
-                    >
-                    <input
+                    <BaseInput
                         v-model="form.password"
+                        label="Contraseña"
                         type="password"
                         autocomplete="current-password"
-                        class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
+                        required
+                        :error="form.errors.password"
                     />
-                    <span
-                        v-if="form.errors.password"
-                        class="text-xs text-red-600 dark:text-red-400"
+
+                    <label
+                        class="flex w-fit items-center gap-2.5 text-sm font-medium text-ink-muted"
                     >
-                        {{ form.errors.password }}
-                    </span>
-                </label>
+                        <input
+                            v-model="form.remember"
+                            type="checkbox"
+                            class="h-4 w-4 rounded border-line-strong accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        />
+                        Recordarme
+                    </label>
 
-                <label
-                    class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
-                >
-                    <input v-model="form.remember" type="checkbox" />
-                    Recordarme
-                </label>
+                    <BaseButton
+                        type="submit"
+                        size="lg"
+                        class="w-full"
+                        :loading="form.processing"
+                        loading-label="Iniciando sesión"
+                    >
+                        Iniciar sesión
+                    </BaseButton>
+                </form>
 
-                <button
-                    type="submit"
-                    :disabled="form.processing"
-                    class="rounded-md bg-[#1b1b18] px-4 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-50 dark:bg-white dark:text-[#1b1b18] dark:hover:bg-gray-200"
-                >
-                    {{ form.processing ? 'Ingresando…' : 'Ingresar' }}
-                </button>
-            </form>
-        </div>
-    </div>
+                <p class="mt-6 text-center text-sm text-ink-muted">
+                    ¿No tienes cuenta?
+                    <Link
+                        href="/register"
+                        class="font-semibold text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                    >
+                        Regístrate
+                    </Link>
+                </p>
+            </BaseCard>
+        </section>
+    </GuestLayout>
 </template>

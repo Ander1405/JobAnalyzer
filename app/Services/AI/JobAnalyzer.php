@@ -16,11 +16,20 @@ use Throwable;
 
 class JobAnalyzer
 {
-    private const SYSTEM_PROMPT = <<<'PROMPT'
+    private const BASE_PROMPT = <<<'PROMPT'
 Eres un asesor experto en carrera para desarrolladores de software en Latinoamérica.
-Recibirás un PERFIL profesional y una VACANTE. Analiza la compatibilidad y responde
-ÚNICAMENTE con un objeto JSON válido, sin markdown, sin backticks, sin texto adicional,
-con exactamente este esquema:
+Recibirás un PERFIL profesional y una VACANTE.
+
+Antes de escribir nada, haz este anclaje mental (no lo incluyas en la salida):
+- Lista los solapamientos REALES entre PERFIL y VACANTE: tecnologías, dominios,
+  seniority, que aparezcan textualmente en ambos.
+- Lista los vacíos REALES: lo que la VACANTE pide y el PERFIL no evidencia.
+Cada tip y cada ajuste que propongas debe salir de uno de esos solapamientos o vacíos
+concretos, citando la tecnología, empresa o requisito puntual. Si un tip serviría igual
+para cualquier otra vacante, es genérico: reescríbelo o descártalo.
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin markdown, sin backticks, sin texto
+adicional, con exactamente este esquema:
 
 {
   "match_score": <entero 0-100>,
@@ -52,6 +61,15 @@ EXCLUSIVAMENTE en la información del PERFIL.
 seniority_inferido, modalidad_inferida y skills_requeridos son un complemento: infierelos
 ÚNICAMENTE a partir del texto de la VACANTE (no del perfil), y usa "No especificado" o un
 array vacío si la descripción no da información suficiente para inferirlos con confianza.
+
+Contraste para tips_postulacion y tailoring_cv (sigue el patrón "BIEN"):
+  MAL  (genérico, sirve para cualquiera): "Resalta tu experiencia y adapta tu CV a la vacante."
+  BIEN (anclado en este cruce):           "La vacante pide Kafka y tu PERFIL solo menciona RabbitMQ;
+                                            en el summary conecta ambos como 'mensajería asíncrona'
+                                            y sube la línea de RabbitMQ al primer bloque de experiencia."
+  MAL  (genérico): "Menciona tus logros cuantificados."
+  BIEN (anclado):  "Tu línea de 'optimicé consultas' no dice cuánto; si recuerdas el % de mejora en
+                    ese proyecto de reporting, agrégalo porque la vacante enfatiza performance."
 PROMPT;
 
     /**
@@ -87,10 +105,10 @@ PROMPT;
     public function analyze(Job $job): void
     {
         try {
-            $activeProfile = Profile::active();
-            $perfilMd = $activeProfile !== null ? $activeProfile->raw_md : (string) file_get_contents(ProfileFile::path());
             $provider = $this->factory->make();
             $providerName = AiSetting::current()->provider;
+            $activeProfile = Profile::active();
+            $perfilMd = $activeProfile !== null ? $activeProfile->raw_md : $this->readProfileFile();
         } catch (Throwable $exception) {
             $job->update([
                 'status' => JobStatus::Failed,
@@ -151,6 +169,17 @@ PROMPT;
         return $metadata;
     }
 
+    private function readProfileFile(): string
+    {
+        $path = ProfileFile::path();
+
+        if (! file_exists($path)) {
+            throw new RuntimeException("No hay perfil activo ni archivo de respaldo en [{$path}].");
+        }
+
+        return (string) file_get_contents($path);
+    }
+
     private function attempt(AIProvider $provider, string $perfilMd, Job $job): ?AiAnalysisResult
     {
         try {
@@ -167,7 +196,7 @@ PROMPT;
 
     public static function systemPrompt(): string
     {
-        return self::SYSTEM_PROMPT;
+        return self::BASE_PROMPT."\n\n".PromptCraft::humanVoice();
     }
 
     public static function userPrompt(string $perfilMd, Job $job): string

@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\DTOs\JobOffer;
 use App\Enums\JobStatus;
 use App\Models\Job;
+use App\Models\Profile;
 use App\Services\Sources\InfoJobsFetcher;
 use App\Services\Sources\JobSourceInterface;
 use App\Services\Sources\JSearchFetcher;
@@ -21,6 +22,8 @@ class JobsFetchCommandTest extends TestCase
 
     public function test_it_falls_back_to_the_listing_url_when_a_source_has_no_apply_url(): void
     {
+        Profile::factory()->active()->create();
+
         $this->app->bind(JSearchFetcher::class, fn () => new class implements JobSourceInterface
         {
             public function fetch(): Collection
@@ -59,6 +62,8 @@ class JobsFetchCommandTest extends TestCase
 
     public function test_it_automatically_analyzes_new_jobs_when_fetched(): void
     {
+        Profile::factory()->active()->create();
+
         $this->app->bind(JSearchFetcher::class, fn () => new class implements JobSourceInterface
         {
             public function fetch(): Collection

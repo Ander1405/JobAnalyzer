@@ -28,6 +28,8 @@ class AppShellRouteTest extends TestCase
             'tracking detail' => ['/tracking/1'],
             'profile' => ['/profile'],
             'design system' => ['/profile/design-system'],
+            'admin users' => ['/admin/users'],
+            'admin roles' => ['/admin/roles'],
         ];
     }
 

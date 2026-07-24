@@ -20,6 +20,8 @@ class AnalyzeJobListingTest extends TestCase
 
     public function test_handle_delegates_to_the_job_analyzer_and_persists_the_result(): void
     {
+        Profile::factory()->active()->create();
+
         config(['jobhunter.gemini.api_key' => 'test-key']);
         AiSetting::current()->update(['provider' => 'gemini', 'model' => 'gemini-flash-latest']);
 
@@ -88,6 +90,8 @@ class AnalyzeJobListingTest extends TestCase
 
     public function test_it_honours_an_explicit_request_to_skip_the_pre_filter(): void
     {
+        Profile::factory()->active()->create();
+
         config(['jobhunter.gemini.api_key' => 'test-key']);
         AiSetting::current()->update(['provider' => 'gemini', 'model' => 'gemini-flash-latest']);
 

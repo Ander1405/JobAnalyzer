@@ -18,7 +18,7 @@ use Throwable;
  */
 class CvAtsOptimizer
 {
-    private const SYSTEM_PROMPT = <<<'PROMPT'
+    private const BASE_PROMPT = <<<'PROMPT'
 Eres un experto en optimización de CVs para sistemas ATS (Applicant Tracking Systems).
 Recibirás el CV completo de un candidato en Markdown. Evalúalo contra criterios
 estándar de compatibilidad ATS: una sola columna, encabezados estándar y claros
@@ -46,9 +46,17 @@ Reglas:
   no inventes cifras en version_optimizada_md.
 - Ningún CV es infalible ante un sistema ATS: sé honesto y específico en
   "problemas" en vez de prometer resultados garantizados.
+- version_optimizada_md se rige por la VOZ HUMANA de abajo: cada bullet reescrito
+  debe quedar concreto y sin muletillas; si un bullet original ya era genérico y no
+  hay evidencia para concretarlo, déjalo como está antes que inflarlo.
 PROMPT;
 
     private ?string $lastError = null;
+
+    private static function systemPrompt(): string
+    {
+        return self::BASE_PROMPT."\n\n".PromptCraft::humanVoice()."\n\n".PromptCraft::authenticityGuard();
+    }
 
     public function __construct(private readonly AIProviderFactory $factory) {}
 
@@ -69,7 +77,7 @@ PROMPT;
     private function attempt(AIProvider $provider, Profile $profile): ?CvAtsResult
     {
         try {
-            $completion = $provider->complete(self::SYSTEM_PROMPT, $profile->raw_md);
+            $completion = $provider->complete(self::systemPrompt(), $profile->raw_md);
 
             return $this->parseResponse($completion->text, $completion->usage, $completion->model);
         } catch (Throwable $exception) {

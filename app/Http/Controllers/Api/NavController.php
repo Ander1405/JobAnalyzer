@@ -23,7 +23,7 @@ class NavController extends Controller
                 ->where('status', JobStatus::Analyzed)
                 ->doesntHave('trackedJob')
                 ->whereRaw(
-                    "CAST(json_extract(ai_analysis, '$.match_score') AS INTEGER) >= ?",
+                    Job::matchScoreCastSql().' >= ?',
                     [(int) config('jobhunter.min_match_to_publish', 65)],
                 )
                 ->count(),
